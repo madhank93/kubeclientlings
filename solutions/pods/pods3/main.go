@@ -3,12 +3,16 @@
 // Update() is optimistic concurrency in action: the object you send must
 // carry the resourceVersion of the object you read. You never build an
 // update by hand — you Get the current object, mutate it, and send it back.
+// And because ANYONE can write between your Get and your Update (the kubelet
+// writes pod status constantly), production code wraps the cycle in
+// retry.RetryOnConflict.
 //
 // Add the label tier=frontend to the existing pod, the right way.
 package main
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/madhank93/clientlings/internal/exkit"
 )
@@ -21,14 +25,18 @@ func main() {
 		exkit.Failf("creating pod: %v", err)
 	}
 
-	// Get the live object (it carries the resourceVersion), mutate, Update.
-	current, err := cs.CoreV1().Pods(ns).Get(ctx, "hello", metav1.GetOptions{})
+	// Get the live object (it carries the resourceVersion), mutate, Update —
+	// retrying if someone else (the kubelet!) wrote in between.
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		current, err := cs.CoreV1().Pods(ns).Get(ctx, "hello", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		current.Labels["tier"] = "frontend"
+		_, err = cs.CoreV1().Pods(ns).Update(ctx, current, metav1.UpdateOptions{})
+		return err
+	})
 	if err != nil {
-		exkit.Failf("getting pod: %v", err)
-	}
-	current.Labels["tier"] = "frontend"
-
-	if _, err := cs.CoreV1().Pods(ns).Update(ctx, current, metav1.UpdateOptions{}); err != nil {
 		exkit.Failf("updating pod: %v", err)
 	}
 

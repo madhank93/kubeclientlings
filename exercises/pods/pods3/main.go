@@ -3,6 +3,9 @@
 // Update() is optimistic concurrency in action: the object you send must
 // carry the resourceVersion of the object you read. You never build an
 // update by hand — you Get the current object, mutate it, and send it back.
+// And because ANYONE can write between your Get and your Update (the kubelet
+// writes pod status constantly), production code wraps the cycle in
+// retry.RetryOnConflict.
 //
 // Add the label tier=frontend to the existing pod, the right way.
 //

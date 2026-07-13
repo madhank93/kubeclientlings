@@ -78,7 +78,13 @@ resourceVersion — with your change applied on top:
     _, err = cs.CoreV1().Pods(ns).Update(ctx, current, metav1.UpdateOptions{})
 
 A hand-built object has no resourceVersion (and an empty spec!), so the
-server refuses it."""
+server refuses it. And because the kubelet writes pod status between your
+Get and Update, wrap the whole cycle in retry.RetryOnConflict
+(k8s.io/client-go/util/retry):
+
+    retry.RetryOnConflict(retry.DefaultRetry, func() error {
+        // Get, mutate, Update — return the Update error
+    })"""
 
 [[exercises]]
 name = "pods4"
