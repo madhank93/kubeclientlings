@@ -193,3 +193,107 @@ Use the constant instead of guessing:
 
 A selector on a label nothing has isn't an error — just an eternally empty
 list, which is why the broken version times out instead of failing fast."""
+
+[[exercises]]
+name = "opt1"
+path = "exercises/options/opt1/main.go"
+mode = "compile"
+hint = """
+labels.Set is a map and SelectorFromSet ANDs every entry together. The
+broken set only pins env=prod, so db-prod-1 rides along (3 pods, not 2).
+Require both keys:
+
+    labels.SelectorFromSet(labels.Set{"env": "prod", "tier": "web"})"""
+
+[[exercises]]
+name = "opt2"
+path = "exercises/options/opt2/main.go"
+mode = "compile"
+hint = """
+metadata.name is an object FIELD, not a label — a LabelSelector for it
+matches nothing (and matching nothing is not an error, just an empty list).
+Use the field selector instead:
+
+    FieldSelector: "metadata.name=web-2"
+
+Remember: field selectors only work on the handful of fields the server
+indexes (metadata.name, metadata.namespace, status.phase, spec.nodeName...)."""
+
+[[exercises]]
+name = "opt3"
+path = "exercises/options/opt3/main.go"
+mode = "compile"
+hint = """
+Server-side apply requires an identity: every applied field records who owns
+it. Empty ApplyOptions has no FieldManager, so the server rejects the patch.
+Give it the name the assertion expects:
+
+    metav1.ApplyOptions{FieldManager: "clientlings"}"""
+
+[[exercises]]
+name = "opt4"
+path = "exercises/options/opt4/main.go"
+mode = "compile"
+hint = """
+An ownerReference without a UID is invalid — names can be reused, UIDs are
+the server-assigned identity that never is. The Create() call for the owner
+returned the object WITH its UID filled in:
+
+    UID: owner.UID
+
+Add that to the OwnerReference and garbage collection can do its job."""
+
+[[exercises]]
+name = "watch1"
+path = "exercises/watch/watch1/main.go"
+mode = "compile"
+hint = """
+watch.EventType is a string type, so `case "DELETE":` compiles — but the
+server never sends that value. The real constants live in
+k8s.io/apimachinery/pkg/watch:
+
+    case watch.Deleted:
+        sawDeleted = true
+
+They stringify as ADDED, MODIFIED, DELETED — use the constants and you
+never have to remember that."""
+
+[[exercises]]
+name = "watch2"
+path = "exercises/watch/watch2/main.go"
+mode = "compile"
+hint = """
+ResourceVersion "0" replays the server's cache: old-1/old-2/old-3 arrive as
+fresh Added events before new-pod ever shows up. List-then-watch fixes it —
+keep the list result and start the watch exactly where the list ended:
+
+    list, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
+    ...
+    watcher, err := cs.CoreV1().Pods(ns).Watch(ctx, metav1.ListOptions{
+        ResourceVersion: list.ResourceVersion,
+    })"""
+
+[[exercises]]
+name = "watch3"
+path = "exercises/watch/watch3/main.go"
+mode = "compile"
+hint = """
+RetryWatcher rejects "" and "0" on purpose: it can only resume from a REAL
+point in history. List first and hand it the list's resourceVersion:
+
+    list, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
+    ...
+    watchtools.NewRetryWatcherWithContext(ctx, list.ResourceVersion, ...)"""
+
+[[exercises]]
+name = "watch4"
+path = "exercises/watch/watch4/main.go"
+mode = "compile"
+hint = """
+The broadcaster is never connected to the API server, so the recorder emits
+into the void — no error, no event. Wire the sink before recording, with the
+import typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1":
+
+    broadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
+        Interface: cs.CoreV1().Events(ns),
+    })"""
