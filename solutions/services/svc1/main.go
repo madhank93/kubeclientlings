@@ -9,6 +9,8 @@
 package main
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -39,6 +41,16 @@ func main() {
 	if _, err := cs.CoreV1().Services(ns).Create(ctx, svc, metav1.CreateOptions{}); err != nil {
 		exkit.Failf("creating service: %v", err)
 	}
+
+	// The deployment controller creates pods asynchronously — give them a
+	// moment to exist before judging the service's selector.
+	exkit.WaitFor(ctx, "the deployment's 2 pods to exist", func(ctx context.Context) (bool, error) {
+		pods, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: "app=web"})
+		if err != nil {
+			return false, err
+		}
+		return len(pods.Items) == 2, nil
+	})
 
 	// The moment of truth: does the service's selector select anything?
 	selected, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
