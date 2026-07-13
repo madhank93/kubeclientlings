@@ -21,6 +21,9 @@ func NewRootCmd(version string) *cobra.Command {
 	rootCmd.AddCommand(ResetCmd("info.toml"))
 	rootCmd.AddCommand(VerifyCmd("info.toml"))
 	rootCmd.AddCommand(WatchCmd("info.toml"))
+	rootCmd.AddCommand(UpCmd())
+	rootCmd.AddCommand(DownCmd())
+	rootCmd.AddCommand(DoctorCmd())
 
 	return rootCmd
 }

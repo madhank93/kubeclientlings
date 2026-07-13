@@ -15,6 +15,10 @@ func VerifyCmd(infoFile string) *cobra.Command {
 		Use:   "verify",
 		Short: "Verify all exercises",
 		Run: func(cmd *cobra.Command, args []string) {
+			if err := EnsureReady(); err != nil {
+				color.Red(err.Error())
+				os.Exit(1)
+			}
 			allExercises, err := exercises.List(infoFile)
 			if err != nil {
 				color.Red(err.Error())

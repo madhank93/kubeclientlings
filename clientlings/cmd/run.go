@@ -21,6 +21,9 @@ example specific exercise : clientlings run variables1`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := EnsureReady(); err != nil {
+				return err
+			}
 			var exercise exercises.Exercise
 			var err error
 			if args[0] == "next" {

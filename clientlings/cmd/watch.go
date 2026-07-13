@@ -13,6 +13,9 @@ func WatchCmd(infoFile string) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := EnsureReady(); err != nil {
+				return err
+			}
 			m, err := tui.New(infoFile)
 			if err != nil {
 				return err
