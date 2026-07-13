@@ -1,0 +1,109 @@
+# mise: toolchain + tools + task runner for the clientlings learning repo.
+# Run `mise install` once to provision everything, then `mise run <task>`.
+
+[tools]
+go = "1.26.4"
+node = "22"
+kind = "0.31.0"
+kubectl = "1.36.1"
+goreleaser = "latest"
+"go:golang.org/x/tools/gopls" = "latest"
+"go:github.com/golangci/golangci-lint/cmd/golangci-lint" = "latest"
+
+[env]
+# put our locally-built binary on PATH
+_.path = ["{{config_root}}/bin"]
+
+[tasks.build]
+description = "Build the clientlings binary into ./bin"
+run = "go build -o bin/clientlings ./clientlings"
+
+[tasks.watch]
+description = "Interactive watch loop (build first)"
+depends = ["build"]
+run = "./bin/clientlings watch"
+
+[tasks.list]
+description = "List all exercises + progress"
+depends = ["build"]
+run = "./bin/clientlings list"
+
+[tasks.up]
+description = "Create the local kind cluster (kind-clientlings)"
+depends = ["build"]
+run = "./bin/clientlings up"
+
+[tasks.down]
+description = "Delete the local kind cluster"
+depends = ["build"]
+run = "./bin/clientlings down"
+
+[tasks.doctor]
+description = "Check tooling + cluster health"
+depends = ["build"]
+run = "./bin/clientlings doctor"
+
+[tasks.nuke]
+description = "Delete all exercise namespaces (clx-*) without killing the cluster"
+run = "kubectl --context kind-clientlings delete ns -l clientlings.dev/exercise --wait=false"
+
+[tasks.lint]
+description = "Lint the tool source (exercises are broken on purpose)"
+run = "golangci-lint run ./clientlings ./clientlings/cmd ./clientlings/exercises ./clientlings/cluster ./clientlings/preflight ./clientlings/tui ./clientlings/ui ./internal/exkit"
+
+[tasks.test]
+description = "Test the tool source with the race detector"
+run = "go test -race $(go list ./clientlings/... ./internal/... | grep -v fixtures)"
+
+[tasks.e2e]
+description = "Overlay solutions onto exercises, verify all against kind, restore"
+depends = ["build"]
+run = """
+set -e
+cp -R solutions/. exercises/
+status=0
+./bin/clientlings verify || status=$?
+git checkout -- exercises/
+exit $status
+"""
+
+[tasks.gen-site]
+description = "Generate docs site content from info.toml + READMEs"
+run = "go run ./web/gen"
+
+[tasks.site]
+description = "Generate content and run the docs dev server"
+depends = ["gen-site"]
+dir = "{{config_root}}/web"
+run = "npm install && npm run dev"
+
+[tasks.site-build]
+description = "Generate content and build the docs site"
+depends = ["gen-site"]
+dir = "{{config_root}}/web"
+run = "npm ci && npm run build"
+
+[tasks.update]
+description = "Pull the latest changes without losing your exercise progress"
+run = """
+set -e
+echo '→ shelving your exercise edits…'
+if ! git diff --quiet -- exercises || [ -n "$(git ls-files --others --exclude-standard -- exercises)" ]; then
+  git stash push -u -m clientlings-autostash -- exercises
+  stashed=1
+else
+  echo '  (nothing to shelve)'
+  stashed=0
+fi
+echo '→ pulling latest…'
+git pull --ff-only
+if [ "$stashed" = 1 ]; then
+  echo '→ restoring your edits…'
+  git stash pop
+fi
+echo '✓ up to date. Your progress in .clientlings-state.json was never touched.'
+"""
+
+[tasks.release-check]
+description = "Validate the goreleaser config and build a local snapshot"
+run = "goreleaser check && goreleaser build --snapshot --clean --single-target"

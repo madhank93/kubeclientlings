@@ -1,0 +1,20 @@
+dist/
+coverage.out
+.DS_Store
+
+# build output
+/bin/
+
+# local progress state
+.clientlings-state.json
+
+# editor — ignore personal VS Code files but share the recommended config
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# docs site
+web/node_modules/
+web/dist/
+web/.astro/
