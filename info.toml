@@ -42,3 +42,148 @@ after MustRESTConfig():
 QPS/Burst are the client-side rate limiter (defaults 5/10 are painfully low
 for controllers), Timeout bounds every request, and UserAgent is how your
 client shows up in API server audit logs. Remember to import "time"."""
+
+[[exercises]]
+name = "pods1"
+path = "exercises/pods/pods1/main.go"
+mode = "compile"
+hint = """
+Namespaced clients take the namespace as an argument: Pods(ns), not Pods("").
+The empty string means "no namespace" in the request URL — the API server
+rejects a namespaced create without one. The `ns` variable from exkit.Begin
+is the namespace this exercise should use."""
+
+[[exercises]]
+name = "pods2"
+path = "exercises/pods/pods2/main.go"
+mode = "compile"
+hint = """
+Filtering happens server-side via ListOptions:
+
+    cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: "app=web"})
+
+Same syntax as `kubectl get pods -l app=web`."""
+
+[[exercises]]
+name = "pods3"
+path = "exercises/pods/pods3/main.go"
+mode = "compile"
+hint = """
+Update() needs the object the server currently has — including its
+resourceVersion — with your change applied on top:
+
+    current, err := cs.CoreV1().Pods(ns).Get(ctx, "hello", metav1.GetOptions{})
+    // handle err
+    current.Labels["tier"] = "frontend"
+    _, err = cs.CoreV1().Pods(ns).Update(ctx, current, metav1.UpdateOptions{})
+
+A hand-built object has no resourceVersion (and an empty spec!), so the
+server refuses it."""
+
+[[exercises]]
+name = "pods4"
+path = "exercises/pods/pods4/main.go"
+mode = "compile"
+hint = """
+The patch body {"metadata":{"labels":{...}}} is shaped like the object —
+that's a strategic merge patch, so the type must say so:
+
+    types.StrategicMergePatchType
+
+types.JSONPatchType expects a completely different format:
+[{"op":"add","path":"/metadata/labels/tier","value":"frontend"}]. Either
+make the type match the body, or the body match the type."""
+
+[[exercises]]
+name = "pods5"
+path = "exercises/pods/pods5/main.go"
+mode = "compile"
+hint = """
+Inside the wait loop, check for the "gone" signal BEFORE treating err as
+fatal:
+
+    _, err := cs.CoreV1().Pods(ns).Get(ctx, "doomed", metav1.GetOptions{})
+    if apierrors.IsNotFound(err) {
+        return true, nil // deleted — success!
+    }
+    if err != nil {
+        return false, err // real error
+    }
+    return false, nil
+
+Import k8s.io/apimachinery/pkg/api/errors as apierrors."""
+
+[[exercises]]
+name = "deploy1"
+path = "exercises/deployments/deploy1/main.go"
+mode = "compile"
+hint = """
+Read the 422 the server sends back — it names the exact field. The
+selector says app=web but the pod template's labels say app=website.
+Make them identical (both app=web); the cleanest fix is one shared
+`labels` variable used in both places."""
+
+[[exercises]]
+name = "deploy2"
+path = "exercises/deployments/deploy2/main.go"
+mode = "compile"
+hint = """
+.spec.replicas is a *int32. `replicas := 3` gives you an int, and Go will
+not auto-convert pointer targets. Declare the right type:
+
+    replicas := int32(3)
+    dep.Spec.Replicas = &replicas"""
+
+[[exercises]]
+name = "deploy3"
+path = "exercises/deployments/deploy3/main.go"
+mode = "compile"
+hint = """
+containers is a list with merge key "name". The patch must say WHICH
+container gets the new image:
+
+    {"spec":{"template":{"spec":{"containers":[{"name":"web","image":"..."}]}}}}
+
+Without "name" the server can't merge the list element and rejects the
+patch."""
+
+[[exercises]]
+name = "deploy4"
+path = "exercises/deployments/deploy4/main.go"
+mode = "compile"
+timeout = 240
+hint = """
+Status.Replicas counts created pods, not ready ones. Wait for the fields
+that mean "done":
+
+    if d.Status.ObservedGeneration < d.Generation { return false, nil }
+    return d.Status.UpdatedReplicas == replicas &&
+           d.Status.ReadyReplicas == replicas, nil
+
+The ObservedGeneration guard matters after updates: without it you can read
+a status describing the PREVIOUS spec and declare victory early."""
+
+[[exercises]]
+name = "svc1"
+path = "exercises/services/svc1/main.go"
+mode = "compile"
+timeout = 240
+hint = """
+The deployment's pods carry app=web (exkit.NginxDeployment labels pods
+app=<name>). The service selector says app=webserver — nothing matches.
+Change the selector to {"app": "web"}."""
+
+[[exercises]]
+name = "svc2"
+path = "exercises/services/svc2/main.go"
+mode = "compile"
+timeout = 240
+hint = """
+EndpointSlices carry the well-known label kubernetes.io/service-name.
+Use the constant instead of guessing:
+
+    import discoveryv1 "k8s.io/api/discovery/v1"
+    LabelSelector: discoveryv1.LabelServiceName + "=web"
+
+A selector on a label nothing has isn't an error — just an eternally empty
+list, which is why the broken version times out instead of failing fast."""

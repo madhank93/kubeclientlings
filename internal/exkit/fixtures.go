@@ -4,6 +4,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // Image is the container image all fixtures run. nginx is tiny, quick to
@@ -23,6 +24,21 @@ func NginxPod(ns, name string) *corev1.Pod {
 			Containers: []corev1.Container{{
 				Name:  "web",
 				Image: Image,
+			}},
+		},
+	}
+}
+
+// WebService returns a ClusterIP service on port 80 selecting app=<name>,
+// matching the pods NginxDeployment(ns, name, …) creates.
+func WebService(ns, name string) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{"app": name},
+			Ports: []corev1.ServicePort{{
+				Port:       80,
+				TargetPort: intstr.FromInt32(80),
 			}},
 		},
 	}
