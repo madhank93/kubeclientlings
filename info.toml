@@ -1,0 +1,44 @@
+[[exercises]]
+name = "setup1"
+path = "exercises/setup/setup1/main.go"
+mode = "compile"
+hint = """
+kubectl finds credentials with the *standard loading rules*, not a fixed path.
+In clientcmd that is:
+
+    rules := clientcmd.NewDefaultClientConfigLoadingRules()
+    overrides := &clientcmd.ConfigOverrides{CurrentContext: "kind-clientlings"}
+    config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
+
+The rules check $KUBECONFIG first, then fall back to ~/.kube/config — and the
+override pins the context so it works no matter what your current context is."""
+
+[[exercises]]
+name = "setup2"
+path = "exercises/setup/setup2/main.go"
+mode = "compile"
+hint = """
+Look closely at the kubernetes.NewForConfig line. Two things are wrong:
+
+1. It receives a brand-new empty &rest.Config{} instead of the `config` that
+   was carefully loaded a few lines above. An empty config points at nothing.
+2. The returned error is discarded with `_`. client-go constructors return
+   errors for a reason — handle it and exit like the other calls do.
+"""
+
+[[exercises]]
+name = "setup3"
+path = "exercises/setup/setup3/main.go"
+mode = "compile"
+hint = """
+Everything the checks want is a plain field on *rest.Config — set them right
+after MustRESTConfig():
+
+    config.QPS = 50
+    config.Burst = 100
+    config.Timeout = 10 * time.Second
+    config.UserAgent = "clientlings/setup3"
+
+QPS/Burst are the client-side rate limiter (defaults 5/10 are painfully low
+for controllers), Timeout bounds every request, and UserAgent is how your
+client shows up in API server audit logs. Remember to import "time"."""
