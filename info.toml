@@ -356,3 +356,96 @@ the cache is way bigger than needed). Scope it:
 
     factory := informers.NewSharedInformerFactoryWithOptions(cs, 0,
         informers.WithNamespace(ns))"""
+
+[[exercises]]
+name = "dyn1"
+path = "exercises/dynamic/dyn1/main.go"
+mode = "compile"
+hint = """
+The dynamic client builds request URLs from the GVR's Resource field, and
+that is the lowercase PLURAL ("pods"), never the Kind ("Pod"). The server
+has no /api/v1/namespaces/<ns>/Pod endpoint:
+
+    gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+
+Group is empty for core/v1 resources — they live under /api, not /apis."""
+
+[[exercises]]
+name = "dyn2"
+path = "exercises/dynamic/dyn2/main.go"
+mode = "compile"
+hint = """
+Nested helpers need EVERY key on the path, top to bottom. A ConfigMap's
+values live under .data, so "message" alone finds nothing:
+
+    msg, found, err := unstructured.NestedString(u.Object, "data", "message")
+
+found=false means the path is wrong (or empty), not that an error occurred."""
+
+[[exercises]]
+name = "dyn3"
+path = "exercises/dynamic/dyn3/main.go"
+mode = "compile"
+timeout = 240
+hint = """
+The GVR version must match a version the CRD actually serves. This CRD's
+spec.versions has exactly one: v1alpha1 (served=true). "v1" 404s as if the
+resource never existed. Fix both the GVR and the object's apiVersion:
+
+    gvr := schema.GroupVersionResource{Group: "clientlings.dev", Version: "v1alpha1", Resource: "widgets"}
+    // ... "apiVersion": "clientlings.dev/v1alpha1""""
+
+[[exercises]]
+name = "dyn4"
+path = "exercises/dynamic/dyn4/main.go"
+mode = "compile"
+hint = """
+apps/v1beta1 was removed in Kubernetes 1.16 — discovery returns an error,
+not an empty list. Deployments live in apps/v1 today:
+
+    resources, err := disco.ServerResourcesForGroupVersion("apps/v1")
+
+Never hardcode a dead groupVersion; discovery is how clients find live ones."""
+
+[[exercises]]
+name = "ctrl1"
+path = "exercises/controllers/ctrl1/main.go"
+mode = "compile"
+hint = """
+Get marks the item PROCESSING and the queue holds any re-Add back until you
+release it. Without Done the re-added key never comes back and the third Get
+blocks forever. Call Done once you finish the item:
+
+    got = append(got, item)
+    if i == 0 {
+        q.Add(item)
+    }
+    q.Done(item)"""
+
+[[exercises]]
+name = "ctrl2"
+path = "exercises/controllers/ctrl2/main.go"
+mode = "compile"
+hint = """
+A bare pod.Name is not a cache key — SplitMetaNamespaceKey then yields an
+empty namespace and the patch goes nowhere. Build a real "namespace/name"
+key with the helper controllers use:
+
+    key, err := cache.MetaNamespaceKeyFunc(pod)
+    if err != nil {
+        return
+    }
+    q.Add(key)"""
+
+[[exercises]]
+name = "ctrl3"
+path = "exercises/controllers/ctrl3/main.go"
+mode = "compile"
+hint = """
+The library enforces LeaseDuration > RenewDeadline > RetryPeriod. Here
+LeaseDuration (5s) is shorter than RenewDeadline (10s), so NewLeaderElector
+rejects it. Make the lease outlive the renew attempts:
+
+    LeaseDuration:   15 * time.Second,
+    RenewDeadline:   10 * time.Second,
+    RetryPeriod:     2 * time.Second,"""
