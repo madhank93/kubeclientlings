@@ -297,3 +297,62 @@ import typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1":
     broadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
         Interface: cs.CoreV1().Events(ns),
     })"""
+
+[[exercises]]
+name = "inf1"
+path = "exercises/informers/inf1/main.go"
+mode = "compile"
+hint = """
+Start() launches the initial List on a background goroutine and returns
+immediately. Block until the cache is populated before reading it:
+
+    import "k8s.io/client-go/tools/cache"
+
+    if !cache.WaitForCacheSync(ctx.Done(), podInformer.Informer().HasSynced) {
+        exkit.Failf("cache never synced")
+    }
+
+Every controller does exactly this between Start and serving."""
+
+[[exercises]]
+name = "inf2"
+path = "exercises/informers/inf2/main.go"
+mode = "compile"
+hint = """
+AddEventHandler only registers the callback — nothing runs until the
+factory starts the informer goroutines. After registering (and before
+creating the pod):
+
+    factory.Start(ctx.Done())
+    if !cache.WaitForCacheSync(ctx.Done(), podInformer.Informer().HasSynced) {
+        exkit.Failf("cache never synced")
+    }"""
+
+[[exercises]]
+name = "inf3"
+path = "exercises/informers/inf3/main.go"
+mode = "compile"
+hint = """
+Stores index namespaced objects by "namespace/name", not bare name. Either
+build the key by hand:
+
+    key := ns + "/target"
+
+or — better — use the same helper controllers use, with the created pod:
+
+    key, err := cache.MetaNamespaceKeyFunc(created)
+
+(You'll need to keep the pod returned by Create for that.)"""
+
+[[exercises]]
+name = "inf4"
+path = "exercises/informers/inf4/main.go"
+mode = "compile"
+timeout = 240
+hint = """
+NewSharedInformerFactory(cs, 0) watches pods in EVERY namespace — the cache
+picks up kube-system and anything else running, so the count is wrong (and
+the cache is way bigger than needed). Scope it:
+
+    factory := informers.NewSharedInformerFactoryWithOptions(cs, 0,
+        informers.WithNamespace(ns))"""
