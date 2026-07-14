@@ -449,3 +449,73 @@ rejects it. Make the lease outlive the renew attempts:
     LeaseDuration:   15 * time.Second,
     RenewDeadline:   10 * time.Second,
     RetryPeriod:     2 * time.Second,"""
+
+[[exercises]]
+name = "wq1"
+path = "exercises/workqueue/wq1/main.go"
+mode = "compile"
+hint = """
+Done releases an item from processing; it does nothing to the retry history,
+so NumRequeues stays at 3. Forget is what clears backoff — a successful
+reconcile calls it:
+
+    q.Forget("a")"""
+
+[[exercises]]
+name = "wq2"
+path = "exercises/workqueue/wq2/main.go"
+mode = "compile"
+hint = """
+The fast-slow limiter returns a flat delay, not a growing one. For delays
+that double every failure (base, 2·base, 4·base…) use the exponential
+limiter:
+
+    rl := workqueue.NewTypedItemExponentialFailureRateLimiter[string](base, max)"""
+
+[[exercises]]
+name = "wq3"
+path = "exercises/workqueue/wq3/main.go"
+mode = "compile"
+hint = """
+An unconditional AddRateLimited requeues a poison item forever. Cap the
+retries and Forget past the cap:
+
+    handleErr := func(key string) {
+        if q.NumRequeues(key) < maxRetries {
+            q.AddRateLimited(key)
+            return
+        }
+        q.Forget(key)
+    }"""
+
+[[exercises]]
+name = "test1"
+path = "exercises/testing/test1/main.go"
+mode = "compile"
+hint = """
+The fake tracker keys objects by namespace AND name. The pod was seeded in
+"demo", so get it from "demo", not "default":
+
+    got, err := cs.CoreV1().Pods("demo").Get(ctx, "seeded", metav1.GetOptions{})"""
+
+[[exercises]]
+name = "test2"
+path = "exercises/testing/test2/main.go"
+mode = "compile"
+hint = """
+A reactor only fires when its verb matches the call. The call is a Create,
+so register the reactor for "create", not "update":
+
+    cs.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+        return true, nil, apierrors.NewInternalError(fmt.Errorf("etcd unavailable"))
+    })"""
+
+[[exercises]]
+name = "test3"
+path = "exercises/testing/test3/main.go"
+mode = "compile"
+hint = """
+Matches(verb, resource) must name the verb you actually called. The action
+was a Create, so:
+
+    actions[0].Matches("create", "configmaps")"""
