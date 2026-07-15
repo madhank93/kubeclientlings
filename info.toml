@@ -519,3 +519,112 @@ Matches(verb, resource) must name the verb you actually called. The action
 was a Create, so:
 
     actions[0].Matches("create", "configmaps")"""
+
+[[exercises]]
+name = "crd1"
+path = "exercises/crds/crd1/main.go"
+mode = "compile"
+hint = """
+The converter maps fields by their json tag. The unstructured object has a
+"size" key, so the struct tag must be "size", not "sizes":
+
+    Size int64 `json:"size"`"""
+
+[[exercises]]
+name = "crd2"
+path = "exercises/crds/crd2/main.go"
+mode = "compile"
+hint = """
+The dynamic client routes on apiVersion + kind, which come from TypeMeta.
+Set it on the struct so the converted object carries them:
+
+    w := Widget{
+        TypeMeta: metav1.TypeMeta{APIVersion: "clientlings.dev/v1alpha1", Kind: "Widget"},
+        ...
+    }"""
+
+[[exercises]]
+name = "ssa1"
+path = "exercises/ssa/ssa1/main.go"
+mode = "compile"
+hint = """
+An apply must name a field manager — the apiserver records ownership under
+that name. Set it in ApplyOptions:
+
+    cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{FieldManager: "clientlings"})"""
+
+[[exercises]]
+name = "ssa2"
+path = "exercises/ssa/ssa2/main.go"
+mode = "compile"
+hint = """
+mgr-a owns data.owner, so mgr-b applying the same field conflicts. Force is
+how you knowingly take ownership:
+
+    metav1.ApplyOptions{FieldManager: "mgr-b", Force: true}"""
+
+[[exercises]]
+name = "sub1"
+path = "exercises/subresources/sub1/main.go"
+mode = "compile"
+hint = """
+Scale.Spec.Replicas is the desired count the /scale endpoint honors;
+Status.Replicas is observed and read-only on write. Set the spec field:
+
+    scale.Spec.Replicas = 3"""
+
+[[exercises]]
+name = "sub2"
+path = "exercises/subresources/sub2/main.go"
+mode = "compile"
+timeout = 240
+hint = """
+With the status subresource enabled, the main Update endpoint ignores status
+changes. Write status through the /status subresource:
+
+    dyn.Resource(gvr).Namespace(ns).UpdateStatus(ctx, got, metav1.UpdateOptions{})"""
+
+[[exercises]]
+name = "fin1"
+path = "exercises/finalizers/fin1/main.go"
+mode = "compile"
+hint = """
+A finalizer makes Delete only mark the object terminating instead of removing
+it. Add one to the object's ObjectMeta.Finalizers:
+
+    Finalizers: []string{finalizer},"""
+
+[[exercises]]
+name = "fin2"
+path = "exercises/finalizers/fin2/main.go"
+mode = "compile"
+hint = """
+The object stays terminating until its finalizer list is empty. Clear the
+slice before Update:
+
+    got.Finalizers = nil
+    cs.CoreV1().ConfigMaps(ns).Update(ctx, got, metav1.UpdateOptions{})"""
+
+[[exercises]]
+name = "wh1"
+path = "exercises/webhooks/wh1/main.go"
+mode = "compile"
+hint = """
+The handler must DENY when the team label is absent — the condition is
+inverted. Use `!ok`:
+
+    if _, ok := pod.Labels["team"]; !ok {
+        resp.Allowed = false
+        ...
+    }"""
+
+[[exercises]]
+name = "wh2"
+path = "exercises/webhooks/wh2/main.go"
+mode = "compile"
+hint = """
+A JSON patch is silently ignored unless the response declares its type. Set
+PatchType (it is a *PatchType, so take the address):
+
+    pt := admissionv1.PatchTypeJSONPatch
+    resp.PatchType = &pt"""

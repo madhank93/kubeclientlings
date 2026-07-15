@@ -14,10 +14,10 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -119,6 +119,19 @@ func Begin(name string) (context.Context, context.CancelFunc, kubernetes.Interfa
 	cs := MustClientset()
 	ctx, cancel := context.WithTimeout(context.Background(), BeginTimeout)
 	ns := "clx-" + name
+
+	// A previous run (especially a failed finalizers exercise) may have left a
+	// ConfigMap carrying a finalizer. That finalizer would wedge the namespace
+	// delete below in Terminating forever, so strip finalizers first. This is
+	// best-effort: if the namespace does not exist yet the list simply fails.
+	if cms, err := cs.CoreV1().ConfigMaps(ns).List(ctx, metav1.ListOptions{}); err == nil {
+		for i := range cms.Items {
+			if len(cms.Items[i].Finalizers) > 0 {
+				cms.Items[i].Finalizers = nil
+				_, _ = cs.CoreV1().ConfigMaps(ns).Update(ctx, &cms.Items[i], metav1.UpdateOptions{})
+			}
+		}
+	}
 
 	err := cs.CoreV1().Namespaces().Delete(ctx, ns, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
