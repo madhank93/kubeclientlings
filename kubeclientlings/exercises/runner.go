@@ -40,7 +40,7 @@ func (e Exercise) Run() (Result, error) {
 	err := cmd.Run()
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		fmt.Fprintf(&stderr,
-			"\nexercise timed out after %s — is the cluster up? Try `clientlings doctor`.\n",
+			"\nexercise timed out after %s — is the cluster up? Try `kubeclientlings doctor`.\n",
 			e.timeout())
 		if err == nil {
 			err = ctx.Err()

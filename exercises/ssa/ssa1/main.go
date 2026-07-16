@@ -26,7 +26,7 @@ func main() {
 
 	// These ApplyOptions have no FieldManager, so the apiserver rejects the
 	// apply — it has nowhere to record who owns the fields. Set FieldManager
-	// to any stable name for this actor, e.g. "clientlings".
+	// to any stable name for this actor, e.g. "kubeclientlings".
 	_, err := cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{})
 	if err != nil {
 		exkit.Failf("applying the configmap: %v", err)

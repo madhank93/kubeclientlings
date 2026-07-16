@@ -32,7 +32,7 @@ type item struct {
 	ex          exercises.Exercise
 }
 
-// Model is the Bubble Tea model for the clientlings TUI.
+// Model is the Bubble Tea model for the kubeclientlings TUI.
 type Model struct {
 	infoFile string
 	tracker  *exercises.Tracker

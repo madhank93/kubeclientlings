@@ -61,7 +61,7 @@ func RESTConfig() (*rest.Config, error) {
 	overrides := &clientcmd.ConfigOverrides{CurrentContext: name}
 	cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("loading kubeconfig for context %q: %w (is the cluster up? try `clientlings up`)", name, err)
+		return nil, fmt.Errorf("loading kubeconfig for context %q: %w (is the cluster up? try `kubeclientlings up`)", name, err)
 	}
 	return cfg, nil
 }

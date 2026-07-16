@@ -24,7 +24,7 @@ import (
 	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
-const crdName = "widgets.clientlings.dev"
+const crdName = "widgets.kubeclientlings.dev"
 
 func main() {
 	ctx, cancel, _, ns := exkit.Begin("sub2")
@@ -47,7 +47,7 @@ func main() {
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{Name: crdName},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: "clientlings.dev",
+			Group: "kubeclientlings.dev",
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural: "widgets", Singular: "widget", Kind: "Widget", ListKind: "WidgetList",
 			},
@@ -93,10 +93,10 @@ func main() {
 	})
 
 	dyn := exkit.MustDynamic()
-	gvr := schema.GroupVersionResource{Group: "clientlings.dev", Version: "v1alpha1", Resource: "widgets"}
+	gvr := schema.GroupVersionResource{Group: "kubeclientlings.dev", Version: "v1alpha1", Resource: "widgets"}
 
 	widget := &unstructured.Unstructured{Object: map[string]any{
-		"apiVersion": "clientlings.dev/v1alpha1",
+		"apiVersion": "kubeclientlings.dev/v1alpha1",
 		"kind":       "Widget",
 		"metadata":   map[string]any{"name": "first", "namespace": ns},
 		"spec":       map[string]any{"size": int64(3)},

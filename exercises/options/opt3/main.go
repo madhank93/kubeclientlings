@@ -30,7 +30,7 @@ func main() {
 
 	// Empty ApplyOptions = apply with no identity. The server refuses:
 	// every applied field must have an owner. Name this manager
-	// "clientlings" (the assertion below checks for it).
+	// "kubeclientlings" (the assertion below checks for it).
 	applied, err := cs.CoreV1().Pods(ns).Apply(ctx, pod, metav1.ApplyOptions{})
 	if err != nil {
 		exkit.Failf("applying pod: %v", err)
@@ -40,10 +40,10 @@ func main() {
 
 	manager := ""
 	for _, mf := range applied.ManagedFields {
-		if mf.Manager == "clientlings" {
+		if mf.Manager == "kubeclientlings" {
 			manager = mf.Manager
 		}
 	}
-	exkit.AssertEqual("field manager recorded by the server", manager, "clientlings")
-	exkit.Successf("server-side apply done — the server tracks 'clientlings' as the owner of those fields")
+	exkit.AssertEqual("field manager recorded by the server", manager, "kubeclientlings")
+	exkit.Successf("server-side apply done — the server tracks 'kubeclientlings' as the owner of those fields")
 }

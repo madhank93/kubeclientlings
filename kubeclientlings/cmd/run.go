@@ -15,8 +15,8 @@ func RunCmd(infoFile string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "run next | <exercise name>",
 		Short: "Run a single exercise",
-		Long: `example next pending exercise : clientlings run next
-example specific exercise : clientlings run variables1`,
+		Long: `example next pending exercise : kubeclientlings run next
+example specific exercise : kubeclientlings run variables1`,
 		Args:          cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -48,7 +48,7 @@ example specific exercise : clientlings run variables1`,
 				color.White("Check the output below: \n\n")
 				color.Red(result.Err)
 				color.Red(result.Out)
-				color.Yellow("If you feel stuck, ask a hint by executing `clientlings hint %s`", result.Exercise.Name)
+				color.Yellow("If you feel stuck, ask a hint by executing `kubeclientlings hint %s`", result.Exercise.Name)
 			} else {
 				color.Green("✅ Successfully tested %s!\n\n", result.Exercise.Path)
 				color.Green("Congratulations!\n\n")

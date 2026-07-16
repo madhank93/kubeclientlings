@@ -23,7 +23,7 @@ import (
 	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
-const crdName = "widgets.clientlings.dev"
+const crdName = "widgets.kubeclientlings.dev"
 
 func main() {
 	ctx, cancel, _, ns := exkit.Begin("dyn3")
@@ -46,7 +46,7 @@ func main() {
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{Name: crdName},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: "clientlings.dev",
+			Group: "kubeclientlings.dev",
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural: "widgets", Singular: "widget", Kind: "Widget", ListKind: "WidgetList",
 			},
@@ -90,10 +90,10 @@ func main() {
 	// The CRD above serves exactly ONE version — scroll up and check
 	// spec.versions. "v1" isn't it: the server 404s on a version a CRD
 	// doesn't serve, exactly as if the resource never existed.
-	gvr := schema.GroupVersionResource{Group: "clientlings.dev", Version: "v1", Resource: "widgets"}
+	gvr := schema.GroupVersionResource{Group: "kubeclientlings.dev", Version: "v1", Resource: "widgets"}
 
 	widget := &unstructured.Unstructured{Object: map[string]any{
-		"apiVersion": "clientlings.dev/v1",
+		"apiVersion": "kubeclientlings.dev/v1",
 		"kind":       "Widget",
 		"metadata":   map[string]any{"name": "first", "namespace": ns},
 		"spec":       map[string]any{"size": int64(3)},

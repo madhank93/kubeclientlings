@@ -22,7 +22,7 @@ func main() {
 	apply := applyconfigcorev1.ConfigMap("settings", ns).
 		WithData(map[string]string{"replicas": "3"})
 
-	_, err := cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{FieldManager: "clientlings"})
+	_, err := cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{FieldManager: "kubeclientlings"})
 	if err != nil {
 		exkit.Failf("applying the configmap: %v", err)
 	}

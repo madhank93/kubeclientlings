@@ -47,7 +47,7 @@ func Check() []Issue {
 	if !cluster.Exists() {
 		issues = append(issues, Issue{
 			Msg: "kind cluster \"" + cluster.Name + "\" not found",
-			Fix: "clientlings up",
+			Fix: "kubeclientlings up",
 		})
 		return issues
 	}
@@ -57,7 +57,7 @@ func Check() []Issue {
 		"get", "--raw", "/readyz", "--request-timeout=5s").Run(); err != nil {
 		issues = append(issues, Issue{
 			Msg: "cluster API server not answering",
-			Fix: "clientlings down && clientlings up",
+			Fix: "kubeclientlings down && kubeclientlings up",
 		})
 	}
 

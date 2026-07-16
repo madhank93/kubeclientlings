@@ -37,8 +37,8 @@ func main() {
 	// starts recording to a sink.
 	defer broadcaster.Shutdown()
 
-	recorder := broadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "clientlings"})
-	recorder.Event(pod, corev1.EventTypeNormal, "Exercised", "clientlings was here")
+	recorder := broadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "kubeclientlings"})
+	recorder.Event(pod, corev1.EventTypeNormal, "Exercised", "kubeclientlings was here")
 
 	exkit.WaitFor(ctx, "the event to appear in the API", func(ctx context.Context) (bool, error) {
 		events, err := cs.CoreV1().Events(ns).List(ctx, metav1.ListOptions{})

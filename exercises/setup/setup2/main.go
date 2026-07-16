@@ -24,7 +24,7 @@ import (
 
 func main() {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	overrides := &clientcmd.ConfigOverrides{CurrentContext: "kind-clientlings"}
+	overrides := &clientcmd.ConfigOverrides{CurrentContext: "kind-kubeclientlings"}
 	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 	if err != nil {
 		fmt.Printf("❌ could not load kubeconfig: %v\n", err)

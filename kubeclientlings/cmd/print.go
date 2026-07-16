@@ -62,7 +62,7 @@ func RunNextExercise(infoFile string) {
 		color.White("Check the output below: \n\n")
 		color.Red(result.Err)
 		color.Red(result.Out)
-		color.Yellow("If you feel stuck, ask a hint by executing `clientlings hint %s`", result.Exercise.Name)
+		color.Yellow("If you feel stuck, ask a hint by executing `kubeclientlings hint %s`", result.Exercise.Name)
 	} else {
 		color.Green("Congratulations!\n\n")
 		color.Green("Here is the output of your program:\n\n")

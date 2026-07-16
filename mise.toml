@@ -1,4 +1,4 @@
-# mise: toolchain + tools + task runner for the clientlings learning repo.
+# mise: toolchain + tools + task runner for the kubeclientlings learning repo.
 # Run `mise install` once to provision everything, then `mise run <task>`.
 
 [tools]
@@ -15,7 +15,7 @@ goreleaser = "latest"
 _.path = ["{{config_root}}/bin"]
 
 [tasks.build]
-description = "Build the clientlings binary into ./bin"
+description = "Build the kubeclientlings binary into ./bin"
 run = "go build -o bin/kubeclientlings ./kubeclientlings"
 
 [tasks.watch]
@@ -67,29 +67,13 @@ git checkout -- exercises/
 exit $status
 """
 
-[tasks.gen-site]
-description = "Generate docs site content from info.toml + READMEs"
-run = "go run ./web/gen"
-
-[tasks.site]
-description = "Generate content and run the docs dev server"
-depends = ["gen-site"]
-dir = "{{config_root}}/web"
-run = "npm install && npm run dev"
-
-[tasks.site-build]
-description = "Generate content and build the docs site"
-depends = ["gen-site"]
-dir = "{{config_root}}/web"
-run = "npm ci && npm run build"
-
 [tasks.update]
 description = "Pull the latest changes without losing your exercise progress"
 run = """
 set -e
 echo '→ shelving your exercise edits…'
 if ! git diff --quiet -- exercises || [ -n "$(git ls-files --others --exclude-standard -- exercises)" ]; then
-  git stash push -u -m clientlings-autostash -- exercises
+  git stash push -u -m kubeclientlings-autostash -- exercises
   stashed=1
 else
   echo '  (nothing to shelve)'
@@ -101,7 +85,7 @@ if [ "$stashed" = 1 ]; then
   echo '→ restoring your edits…'
   git stash pop
 fi
-echo '✓ up to date. Your progress in .clientlings-state.json was never touched.'
+echo '✓ up to date. Your progress in .kubeclientlings-state.json was never touched.'
 """
 
 [tasks.release-check]

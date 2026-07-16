@@ -1,6 +1,6 @@
 // Package cluster manages the local kind cluster every exercise runs against.
 // Ported from kubelings' run-challenge-local.sh up/down verbs so the logic
-// ships inside the single clientlings binary.
+// ships inside the single kubeclientlings binary.
 package cluster
 
 import (
@@ -36,7 +36,7 @@ func Up() error {
 	if Exists() {
 		fmt.Printf("cluster %q already exists.\n", Name)
 	} else {
-		cfg, err := os.CreateTemp("", "clientlings-kind-*.yaml")
+		cfg, err := os.CreateTemp("", "kubeclientlings-kind-*.yaml")
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ func Up() error {
 		return fmt.Errorf("nodes did not become Ready: %w", err)
 	}
 
-	fmt.Printf("cluster %q ready (%d nodes). Next: clientlings watch\n", Name, Workers+1)
+	fmt.Printf("cluster %q ready (%d nodes). Next: kubeclientlings watch\n", Name, Workers+1)
 	return nil
 }
 
