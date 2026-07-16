@@ -8,7 +8,7 @@ import (
 
 func NewRootCmd(version string) *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:           "clientlings",
+		Use:           "kubeclientlings",
 		Short:         "Learn Kubernetes client-go through interactive exercises",
 		SilenceUsage:  true,
 		SilenceErrors: true,

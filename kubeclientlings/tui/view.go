@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/madhank93/clientlings/clientlings/exercises"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
 )
 
 // Adaptive colors so the UI reads well on both light and dark terminals.
@@ -94,12 +94,11 @@ var (
 
 // welcome renders the splash screen shown before the main view.
 func (m Model) welcome() string {
-	title := titleStyle.Foreground(cTeal).Render("🐹  clientlings")
-	tagline := dimStyle.Render("Learn Go the rustlings way — 112 exercises, basics → advanced")
+	title := titleStyle.Foreground(cTeal).Render("🐹  KubeClientlings")
+	tagline := dimStyle.Render(fmt.Sprintf("Learn Kubernetes client-go the rustlings way — %d exercises, basics → advanced", m.total))
 
 	meta := lipgloss.JoinVertical(lipgloss.Left,
-		labelStyle.Render("Repo")+linkStyle.Render("https://github.com/madhank93/clientlings"),
-		labelStyle.Render("Site")+linkStyle.Render("https://clientlings.madhan.app"),
+		labelStyle.Render("Repo")+linkStyle.Render("https://github.com/madhank93/kubeclientlings"),
 		labelStyle.Render("Maintainer")+"Madhan Kumaravelu  "+dimStyle.Render("(@madhank93)"),
 	)
 
@@ -107,7 +106,7 @@ func (m Model) welcome() string {
 		titleStyle.Render("How it works"),
 		"  • Open the highlighted exercise's file and make it compile/pass",
 		"  • Remove the  "+markStyle.Render("// I AM NOT DONE")+"  marker when you think it's done",
-		"  • Save — clientlings auto-runs it; "+titleStyle.Render("tests AND golangci-lint")+" must pass",
+		"  • Save — kubeclientlings auto-runs it; "+titleStyle.Render("tests AND golangci-lint")+" must pass",
 		"  • Press n to move to the next exercise",
 	)
 
@@ -128,7 +127,7 @@ func (m Model) header() string {
 	}
 	bar := m.progress.ViewAs(ratio)
 	stats := fmt.Sprintf(" %d/%d (%.0f%%)   🔥 streak %d", done, m.total, ratio*100, m.tracker.Streak())
-	return titleStyle.Render("clientlings") + "  " + bar + stats
+	return titleStyle.Render("KubeClientlings") + "  " + bar + stats
 }
 
 func (m Model) body() string {

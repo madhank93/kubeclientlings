@@ -1,4 +1,4 @@
-# mise: toolchain + tools + task runner for the clientlings learning repo.
+# mise: toolchain + tools + task runner for the kubeclientlings learning repo.
 # Run `mise install` once to provision everything, then `mise run <task>`.
 
 [tools]
@@ -15,45 +15,45 @@ goreleaser = "latest"
 _.path = ["{{config_root}}/bin"]
 
 [tasks.build]
-description = "Build the clientlings binary into ./bin"
-run = "go build -o bin/clientlings ./clientlings"
+description = "Build the kubeclientlings binary into ./bin"
+run = "go build -o bin/kubeclientlings ./kubeclientlings"
 
 [tasks.watch]
 description = "Interactive watch loop (build first)"
 depends = ["build"]
-run = "./bin/clientlings watch"
+run = "./bin/kubeclientlings watch"
 
 [tasks.list]
 description = "List all exercises + progress"
 depends = ["build"]
-run = "./bin/clientlings list"
+run = "./bin/kubeclientlings list"
 
 [tasks.up]
-description = "Create the local kind cluster (kind-clientlings)"
+description = "Create the local kind cluster (kind-kubeclientlings)"
 depends = ["build"]
-run = "./bin/clientlings up"
+run = "./bin/kubeclientlings up"
 
 [tasks.down]
 description = "Delete the local kind cluster"
 depends = ["build"]
-run = "./bin/clientlings down"
+run = "./bin/kubeclientlings down"
 
 [tasks.doctor]
 description = "Check tooling + cluster health"
 depends = ["build"]
-run = "./bin/clientlings doctor"
+run = "./bin/kubeclientlings doctor"
 
 [tasks.nuke]
 description = "Delete all exercise namespaces (clx-*) without killing the cluster"
-run = "kubectl --context kind-clientlings delete ns -l clientlings.dev/exercise --wait=false"
+run = "kubectl --context kind-kubeclientlings delete ns -l kubeclientlings.dev/exercise --wait=false"
 
 [tasks.lint]
 description = "Lint the tool source (exercises are broken on purpose)"
-run = "golangci-lint run ./clientlings ./clientlings/cmd ./clientlings/exercises ./clientlings/cluster ./clientlings/preflight ./clientlings/tui ./clientlings/ui ./internal/exkit"
+run = "golangci-lint run ./kubeclientlings ./kubeclientlings/cmd ./kubeclientlings/exercises ./kubeclientlings/cluster ./kubeclientlings/preflight ./kubeclientlings/tui ./kubeclientlings/ui ./internal/exkit"
 
 [tasks.test]
 description = "Test the tool source with the race detector"
-run = "go test -race $(go list ./clientlings/... ./internal/... | grep -v fixtures)"
+run = "go test -race $(go list ./kubeclientlings/... ./internal/... | grep -v fixtures)"
 
 [tasks.e2e]
 description = "Overlay solutions onto exercises, verify all against kind, restore"
@@ -62,26 +62,10 @@ run = """
 set -e
 cp -R solutions/. exercises/
 status=0
-./bin/clientlings verify || status=$?
+./bin/kubeclientlings verify || status=$?
 git checkout -- exercises/
 exit $status
 """
-
-[tasks.gen-site]
-description = "Generate docs site content from info.toml + READMEs"
-run = "go run ./web/gen"
-
-[tasks.site]
-description = "Generate content and run the docs dev server"
-depends = ["gen-site"]
-dir = "{{config_root}}/web"
-run = "npm install && npm run dev"
-
-[tasks.site-build]
-description = "Generate content and build the docs site"
-depends = ["gen-site"]
-dir = "{{config_root}}/web"
-run = "npm ci && npm run build"
 
 [tasks.update]
 description = "Pull the latest changes without losing your exercise progress"
@@ -89,7 +73,7 @@ run = """
 set -e
 echo '→ shelving your exercise edits…'
 if ! git diff --quiet -- exercises || [ -n "$(git ls-files --others --exclude-standard -- exercises)" ]; then
-  git stash push -u -m clientlings-autostash -- exercises
+  git stash push -u -m kubeclientlings-autostash -- exercises
   stashed=1
 else
   echo '  (nothing to shelve)'
@@ -101,7 +85,7 @@ if [ "$stashed" = 1 ]; then
   echo '→ restoring your edits…'
   git stash pop
 fi
-echo '✓ up to date. Your progress in .clientlings-state.json was never touched.'
+echo '✓ up to date. Your progress in .kubeclientlings-state.json was never touched.'
 """
 
 [tasks.release-check]

@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applyconfigcorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	apply := applyconfigcorev1.ConfigMap("settings", ns).
 		WithData(map[string]string{"replicas": "3"})
 
-	_, err := cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{FieldManager: "clientlings"})
+	_, err := cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{FieldManager: "kubeclientlings"})
 	if err != nil {
 		exkit.Failf("applying the configmap: %v", err)
 	}

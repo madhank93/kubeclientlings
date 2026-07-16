@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applyconfigcorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 
 	// These ApplyOptions have no FieldManager, so the apiserver rejects the
 	// apply — it has nowhere to record who owns the fields. Set FieldManager
-	// to any stable name for this actor, e.g. "clientlings".
+	// to any stable name for this actor, e.g. "kubeclientlings".
 	_, err := cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{})
 	if err != nil {
 		exkit.Failf("applying the configmap: %v", err)

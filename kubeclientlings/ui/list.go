@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/madhank93/clientlings/clientlings/exercises"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
 )
 
 func PrintList(o io.Writer, exs []exercises.Exercise) {

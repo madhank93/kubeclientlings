@@ -1,0 +1,25 @@
+# iximiuz Labs playground for KubeClientlings.
+# A single Linux machine with Docker so `kind` can run a local Kubernetes
+# cluster; the init task provisions the toolchain and builds the CLI.
+kind: playground
+name: kubeclientlings
+title: KubeClientlings — Learn Kubernetes client-go the rustlings way
+description: |
+  Fix broken client-go programs to learn the Kubernetes API, one bite-sized
+  exercise at a time. The kind cluster and CLI are provisioned on start.
+machines:
+  - name: dev
+    kind: linux
+    resources:
+      cpuCount: 2
+      ramSize: 4Gi
+    users:
+      - name: laborant
+        default: true
+initTasks:
+  init-kubeclientlings:
+    machine: dev
+    init: true
+    user: laborant
+    run: |
+      curl -fsSL https://raw.githubusercontent.com/madhank93/kubeclientlings/main/hack/iximiuz-init.sh | bash

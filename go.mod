@@ -1,4 +1,4 @@
-module github.com/madhank93/clientlings
+module github.com/madhank93/kubeclientlings
 
 go 1.26.0
 

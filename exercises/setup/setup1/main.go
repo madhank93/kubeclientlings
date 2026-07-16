@@ -7,7 +7,7 @@
 // code runs on another machine.
 //
 // Make this program load the kubeconfig using the standard rules, pinned to
-// the kind-clientlings context.
+// the kind-kubeclientlings context.
 //
 // I AM NOT DONE
 package main
@@ -22,7 +22,7 @@ import (
 func main() {
 	// This hard-coded path exists on nobody's machine. Load the kubeconfig
 	// the way kubectl does instead: standard loading rules, with the current
-	// context overridden to "kind-clientlings".
+	// context overridden to "kind-kubeclientlings".
 	config, err := clientcmd.BuildConfigFromFlags("", "/nonexistent/kubeconfig")
 	if err != nil {
 		fmt.Printf("❌ could not load kubeconfig: %v\n", err)

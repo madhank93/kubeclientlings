@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/madhank93/clientlings/clientlings/exercises"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

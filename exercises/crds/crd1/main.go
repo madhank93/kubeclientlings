@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 type Widget struct {
@@ -33,7 +33,7 @@ type WidgetSpec struct {
 func main() {
 	// What the dynamic client would return for a Widget.
 	u := map[string]any{
-		"apiVersion": "clientlings.dev/v1alpha1",
+		"apiVersion": "kubeclientlings.dev/v1alpha1",
 		"kind":       "Widget",
 		"metadata":   map[string]any{"name": "w1"},
 		"spec":       map[string]any{"size": int64(7)},

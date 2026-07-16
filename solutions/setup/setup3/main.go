@@ -19,7 +19,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 	config.QPS = 50
 	config.Burst = 100
 	config.Timeout = 10 * time.Second
-	config.UserAgent = "clientlings/setup3"
+	config.UserAgent = "kubeclientlings/setup3"
 
 	if config.QPS < 20 {
 		fmt.Printf("❌ QPS is %.0f — the default (5) starves controllers; raise it to at least 20\n", config.QPS)

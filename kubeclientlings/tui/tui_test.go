@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/madhank93/clientlings/clientlings/exercises"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
 )
 
 func TestTopicOf(t *testing.T) {
@@ -97,7 +97,7 @@ func TestWelcomeDismiss(t *testing.T) {
 	nm, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = nm.(Model)
 
-	if !strings.Contains(m.View(), "clientlings") || !strings.Contains(m.View(), "press any key") {
+	if !strings.Contains(m.View(), "KubeClientlings") || !strings.Contains(m.View(), "press any key") {
 		t.Error("welcome screen missing expected content")
 	}
 	// any non-quit key dismisses to the main screen
@@ -126,7 +126,7 @@ func TestViewAndNavigationNoPanic(t *testing.T) {
 	if !m.showHint {
 		t.Error("expected hint toggled on")
 	}
-	if !strings.Contains(m.View(), "clientlings") {
+	if !strings.Contains(m.View(), "KubeClientlings") {
 		t.Error("header missing from view")
 	}
 }

@@ -7,8 +7,8 @@ import (
 	"runtime"
 
 	"github.com/fatih/color"
-	"github.com/madhank93/clientlings/clientlings/exercises"
-	"github.com/madhank93/clientlings/clientlings/ui"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/ui"
 )
 
 func PrintHint(infoFile string) {
@@ -44,7 +44,7 @@ func RunNextExercise(infoFile string) {
 		color.Green("You have completed all %d of the currently available exercises.", total)
 		color.Blue("If you enjoyed working through this introduction to Golang,")
 		color.Blue("please give the github repository a star")
-		color.White("> https://github.com/madhank93/clientlings <\n\n\n")
+		color.White("> https://github.com/madhank93/kubeclientlings <\n\n\n")
 
 		color.Yellow("To quit out of watch, please type `exit` and hit enter:")
 
@@ -62,7 +62,7 @@ func RunNextExercise(infoFile string) {
 		color.White("Check the output below: \n\n")
 		color.Red(result.Err)
 		color.Red(result.Out)
-		color.Yellow("If you feel stuck, ask a hint by executing `clientlings hint %s`", result.Exercise.Name)
+		color.Yellow("If you feel stuck, ask a hint by executing `kubeclientlings hint %s`", result.Exercise.Name)
 	} else {
 		color.Green("Congratulations!\n\n")
 		color.Green("Here is the output of your program:\n\n")

@@ -13,10 +13,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
-const finalizer = "clientlings.dev/protect"
+const finalizer = "kubeclientlings.dev/protect"
 
 func main() {
 	ctx, cancel, cs, ns := exkit.Begin("fin1")

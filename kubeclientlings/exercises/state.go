@@ -9,7 +9,7 @@ import (
 )
 
 // StateFile is the default progress file name (kept beside info.toml).
-const StateFile = ".clientlings-state.json"
+const StateFile = ".kubeclientlings-state.json"
 
 const dayLayout = "2006-01-02"
 

@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 func main() {
@@ -27,7 +27,7 @@ func main() {
 	defer cancel()
 
 	lock := &resourcelock.LeaseLock{
-		LeaseMeta:  metav1.ObjectMeta{Name: "clientlings-leader", Namespace: ns},
+		LeaseMeta:  metav1.ObjectMeta{Name: "kubeclientlings-leader", Namespace: ns},
 		Client:     cs.CoordinationV1(),
 		LockConfig: resourcelock.ResourceLockConfig{Identity: "candidate-1"},
 	}
@@ -61,7 +61,7 @@ func main() {
 		exkit.Failf("never became leader")
 	}
 
-	lease, err := cs.CoordinationV1().Leases(ns).Get(ctx, "clientlings-leader", metav1.GetOptions{})
+	lease, err := cs.CoordinationV1().Leases(ns).Get(ctx, "kubeclientlings-leader", metav1.GetOptions{})
 	if err != nil {
 		exkit.Failf("reading the lease: %v", err)
 	}

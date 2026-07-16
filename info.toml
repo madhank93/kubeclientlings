@@ -7,7 +7,7 @@ kubectl finds credentials with the *standard loading rules*, not a fixed path.
 In clientcmd that is:
 
     rules := clientcmd.NewDefaultClientConfigLoadingRules()
-    overrides := &clientcmd.ConfigOverrides{CurrentContext: "kind-clientlings"}
+    overrides := &clientcmd.ConfigOverrides{CurrentContext: "kind-kubeclientlings"}
     config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 
 The rules check $KUBECONFIG first, then fall back to ~/.kube/config — and the
@@ -37,7 +37,7 @@ after MustRESTConfig():
     config.QPS = 50
     config.Burst = 100
     config.Timeout = 10 * time.Second
-    config.UserAgent = "clientlings/setup3"
+    config.UserAgent = "kubeclientlings/setup3"
 
 QPS/Burst are the client-side rate limiter (defaults 5/10 are painfully low
 for controllers), Timeout bounds every request, and UserAgent is how your
@@ -228,7 +228,7 @@ Server-side apply requires an identity: every applied field records who owns
 it. Empty ApplyOptions has no FieldManager, so the server rejects the patch.
 Give it the name the assertion expects:
 
-    metav1.ApplyOptions{FieldManager: "clientlings"}"""
+    metav1.ApplyOptions{FieldManager: "kubeclientlings"}"""
 
 [[exercises]]
 name = "opt4"
@@ -392,8 +392,8 @@ The GVR version must match a version the CRD actually serves. This CRD's
 spec.versions has exactly one: v1alpha1 (served=true). "v1" 404s as if the
 resource never existed. Fix both the GVR and the object's apiVersion:
 
-    gvr := schema.GroupVersionResource{Group: "clientlings.dev", Version: "v1alpha1", Resource: "widgets"}
-    // ... "apiVersion": "clientlings.dev/v1alpha1""""
+    gvr := schema.GroupVersionResource{Group: "kubeclientlings.dev", Version: "v1alpha1", Resource: "widgets"}
+    // ... "apiVersion": "kubeclientlings.dev/v1alpha1""""
 
 [[exercises]]
 name = "dyn4"
@@ -539,7 +539,7 @@ The dynamic client routes on apiVersion + kind, which come from TypeMeta.
 Set it on the struct so the converted object carries them:
 
     w := Widget{
-        TypeMeta: metav1.TypeMeta{APIVersion: "clientlings.dev/v1alpha1", Kind: "Widget"},
+        TypeMeta: metav1.TypeMeta{APIVersion: "kubeclientlings.dev/v1alpha1", Kind: "Widget"},
         ...
     }"""
 
@@ -551,7 +551,7 @@ hint = """
 An apply must name a field manager — the apiserver records ownership under
 that name. Set it in ApplyOptions:
 
-    cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{FieldManager: "clientlings"})"""
+    cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{FieldManager: "kubeclientlings"})"""
 
 [[exercises]]
 name = "ssa2"

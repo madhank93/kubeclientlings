@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/fatih/color"
-	"github.com/madhank93/clientlings/clientlings/exercises"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
 	"github.com/spf13/cobra"
 )
 

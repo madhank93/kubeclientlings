@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 type Widget struct {
@@ -32,7 +32,7 @@ type WidgetSpec struct {
 func main() {
 	// TypeMeta is left unset — so the converted object has no apiVersion/kind,
 	// and the dynamic client cannot route it. Set TypeMeta with the group,
-	// version and Kind ("clientlings.dev/v1alpha1", "Widget").
+	// version and Kind ("kubeclientlings.dev/v1alpha1", "Widget").
 	w := Widget{
 		ObjectMeta: metav1.ObjectMeta{Name: "w1"},
 		Spec:       WidgetSpec{Size: 7},
@@ -45,7 +45,7 @@ func main() {
 	u := &unstructured.Unstructured{Object: m}
 
 	exkit.AssertEqual("the kind the dynamic client will route on", u.GetKind(), "Widget")
-	exkit.AssertEqual("the apiVersion the dynamic client will route on", u.GetAPIVersion(), "clientlings.dev/v1alpha1")
+	exkit.AssertEqual("the apiVersion the dynamic client will route on", u.GetAPIVersion(), "kubeclientlings.dev/v1alpha1")
 
 	size, found, err := unstructured.NestedInt64(m, "spec", "size")
 	if err != nil || !found {
