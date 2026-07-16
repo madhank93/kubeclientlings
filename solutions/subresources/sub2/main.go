@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 const crdName = "widgets.clientlings.dev"

@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/madhank93/clientlings/clientlings/cluster"
-	"github.com/madhank93/clientlings/clientlings/preflight"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/cluster"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/preflight"
 	"github.com/spf13/cobra"
 )
 

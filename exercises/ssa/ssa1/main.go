@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applyconfigcorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 func main() {

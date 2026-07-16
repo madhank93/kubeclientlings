@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/madhank93/clientlings/clientlings/exercises"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )

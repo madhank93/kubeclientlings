@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 func main() {

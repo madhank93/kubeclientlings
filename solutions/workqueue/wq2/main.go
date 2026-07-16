@@ -13,7 +13,7 @@ import (
 
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 func main() {

@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/madhank93/clientlings/internal/exkit"
+	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
 func main() {

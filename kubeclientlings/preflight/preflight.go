@@ -6,7 +6,7 @@ package preflight
 import (
 	"os/exec"
 
-	"github.com/madhank93/clientlings/clientlings/cluster"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/cluster"
 )
 
 // Issue is a missing prerequisite plus how to fix it.

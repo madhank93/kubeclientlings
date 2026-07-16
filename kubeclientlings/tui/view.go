@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/madhank93/clientlings/clientlings/exercises"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
 )
 
 // Adaptive colors so the UI reads well on both light and dark terminals.
@@ -98,7 +98,7 @@ func (m Model) welcome() string {
 	tagline := dimStyle.Render("Learn Go the rustlings way — 112 exercises, basics → advanced")
 
 	meta := lipgloss.JoinVertical(lipgloss.Left,
-		labelStyle.Render("Repo")+linkStyle.Render("https://github.com/madhank93/clientlings"),
+		labelStyle.Render("Repo")+linkStyle.Render("https://github.com/madhank93/kubeclientlings"),
 		labelStyle.Render("Site")+linkStyle.Render("https://clientlings.madhan.app"),
 		labelStyle.Render("Maintainer")+"Madhan Kumaravelu  "+dimStyle.Render("(@madhank93)"),
 	)

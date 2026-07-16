@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/madhank93/clientlings/clientlings/cmd"
-	"github.com/madhank93/clientlings/clientlings/exercises"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/cmd"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
 )
 
 func TestCmd(t *testing.T) {

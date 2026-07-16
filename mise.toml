@@ -16,32 +16,32 @@ _.path = ["{{config_root}}/bin"]
 
 [tasks.build]
 description = "Build the clientlings binary into ./bin"
-run = "go build -o bin/clientlings ./clientlings"
+run = "go build -o bin/kubeclientlings ./kubeclientlings"
 
 [tasks.watch]
 description = "Interactive watch loop (build first)"
 depends = ["build"]
-run = "./bin/clientlings watch"
+run = "./bin/kubeclientlings watch"
 
 [tasks.list]
 description = "List all exercises + progress"
 depends = ["build"]
-run = "./bin/clientlings list"
+run = "./bin/kubeclientlings list"
 
 [tasks.up]
 description = "Create the local kind cluster (kind-clientlings)"
 depends = ["build"]
-run = "./bin/clientlings up"
+run = "./bin/kubeclientlings up"
 
 [tasks.down]
 description = "Delete the local kind cluster"
 depends = ["build"]
-run = "./bin/clientlings down"
+run = "./bin/kubeclientlings down"
 
 [tasks.doctor]
 description = "Check tooling + cluster health"
 depends = ["build"]
-run = "./bin/clientlings doctor"
+run = "./bin/kubeclientlings doctor"
 
 [tasks.nuke]
 description = "Delete all exercise namespaces (clx-*) without killing the cluster"
@@ -49,11 +49,11 @@ run = "kubectl --context kind-clientlings delete ns -l clientlings.dev/exercise 
 
 [tasks.lint]
 description = "Lint the tool source (exercises are broken on purpose)"
-run = "golangci-lint run ./clientlings ./clientlings/cmd ./clientlings/exercises ./clientlings/cluster ./clientlings/preflight ./clientlings/tui ./clientlings/ui ./internal/exkit"
+run = "golangci-lint run ./kubeclientlings ./kubeclientlings/cmd ./kubeclientlings/exercises ./kubeclientlings/cluster ./kubeclientlings/preflight ./kubeclientlings/tui ./kubeclientlings/ui ./internal/exkit"
 
 [tasks.test]
 description = "Test the tool source with the race detector"
-run = "go test -race $(go list ./clientlings/... ./internal/... | grep -v fixtures)"
+run = "go test -race $(go list ./kubeclientlings/... ./internal/... | grep -v fixtures)"
 
 [tasks.e2e]
 description = "Overlay solutions onto exercises, verify all against kind, restore"
@@ -62,7 +62,7 @@ run = """
 set -e
 cp -R solutions/. exercises/
 status=0
-./bin/clientlings verify || status=$?
+./bin/kubeclientlings verify || status=$?
 git checkout -- exercises/
 exit $status
 """

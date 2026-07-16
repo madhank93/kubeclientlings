@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/madhank93/clientlings/clientlings/cmd"
+	"github.com/madhank93/kubeclientlings/kubeclientlings/cmd"
 )
 
 var (
