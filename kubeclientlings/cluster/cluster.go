@@ -13,7 +13,7 @@ import (
 
 const (
 	// Name is the kind cluster name; the kubeconfig context is "kind-" + Name.
-	Name    = "clientlings"
+	Name    = "kubeclientlings"
 	Context = "kind-" + Name
 
 	// Workers is the number of worker nodes (plus one control-plane).

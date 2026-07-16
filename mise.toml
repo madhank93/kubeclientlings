@@ -29,7 +29,7 @@ depends = ["build"]
 run = "./bin/kubeclientlings list"
 
 [tasks.up]
-description = "Create the local kind cluster (kind-clientlings)"
+description = "Create the local kind cluster (kind-kubeclientlings)"
 depends = ["build"]
 run = "./bin/kubeclientlings up"
 
@@ -45,7 +45,7 @@ run = "./bin/kubeclientlings doctor"
 
 [tasks.nuke]
 description = "Delete all exercise namespaces (clx-*) without killing the cluster"
-run = "kubectl --context kind-clientlings delete ns -l clientlings.dev/exercise --wait=false"
+run = "kubectl --context kind-kubeclientlings delete ns -l kubeclientlings.dev/exercise --wait=false"
 
 [tasks.lint]
 description = "Lint the tool source (exercises are broken on purpose)"

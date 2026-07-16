@@ -27,20 +27,20 @@ import (
 
 const (
 	// DefaultContext is the kubeconfig context every exercise talks to.
-	DefaultContext = "kind-clientlings"
+	DefaultContext = "kind-kubeclientlings"
 
 	// ExerciseLabel marks namespaces created by exercises so `mise run nuke`
 	// can sweep them all without touching anything else.
-	ExerciseLabel = "clientlings.dev/exercise"
+	ExerciseLabel = "kubeclientlings.dev/exercise"
 
 	// BeginTimeout bounds a whole exercise run via the context Begin returns.
 	BeginTimeout = 90 * time.Second
 )
 
-// Context returns the kubeconfig context exercises use: CLIENTLINGS_CONTEXT
-// if set, otherwise kind-clientlings.
+// Context returns the kubeconfig context exercises use: KUBECLIENTLINGS_CONTEXT
+// if set, otherwise kind-kubeclientlings.
 func Context() string {
-	if ctx := os.Getenv("CLIENTLINGS_CONTEXT"); ctx != "" {
+	if ctx := os.Getenv("KUBECLIENTLINGS_CONTEXT"); ctx != "" {
 		return ctx
 	}
 	return DefaultContext

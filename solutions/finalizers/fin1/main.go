@@ -16,7 +16,7 @@ import (
 	"github.com/madhank93/kubeclientlings/internal/exkit"
 )
 
-const finalizer = "clientlings.dev/protect"
+const finalizer = "kubeclientlings.dev/protect"
 
 func main() {
 	ctx, cancel, cs, ns := exkit.Begin("fin1")

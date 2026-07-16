@@ -28,7 +28,7 @@ type WidgetSpec struct {
 func main() {
 	// What the dynamic client would return for a Widget.
 	u := map[string]any{
-		"apiVersion": "clientlings.dev/v1alpha1",
+		"apiVersion": "kubeclientlings.dev/v1alpha1",
 		"kind":       "Widget",
 		"metadata":   map[string]any{"name": "w1"},
 		"spec":       map[string]any{"size": int64(7)},

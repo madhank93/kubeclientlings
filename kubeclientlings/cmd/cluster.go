@@ -59,7 +59,7 @@ func DoctorCmd() *cobra.Command {
 // the cluster call this first so the learner sees "cluster not up" instead of
 // a cryptic connection-refused from deep inside client-go.
 func EnsureReady() error {
-	if os.Getenv("CLIENTLINGS_SKIP_PREFLIGHT") != "" {
+	if os.Getenv("KUBECLIENTLINGS_SKIP_PREFLIGHT") != "" {
 		return nil
 	}
 	issues := preflight.Check()

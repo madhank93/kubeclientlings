@@ -18,7 +18,7 @@ func TestCmd(t *testing.T) {
 	defer func() { exercises.PathRoot = old }()
 
 	// Fixtures don't touch the cluster; skip docker/kind/kubectl preflight.
-	t.Setenv("CLIENTLINGS_SKIP_PREFLIGHT", "1")
+	t.Setenv("KUBECLIENTLINGS_SKIP_PREFLIGHT", "1")
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Commands Suite")
