@@ -451,6 +451,26 @@ rejects it. Make the lease outlive the renew attempts:
     RetryPeriod:     2 * time.Second,"""
 
 [[exercises]]
+name = "op1"
+path = "exercises/operator/op1/main.go"
+mode = "compile"
+hint = """
+Two fixes, one lesson — the Reconcile contract:
+
+1. The request already carries the full key. Fetch with it:
+
+       if err := r.Get(ctx, req.NamespacedName, &cm); err != nil {
+
+2. NotFound is not a failure — the object was deleted and the work is
+   simply gone. Swallow it and report success:
+
+       if apierrors.IsNotFound(err) {
+           return ctrl.Result{}, nil
+       }
+       r.errs.Add(1)
+       return ctrl.Result{}, err"""
+
+[[exercises]]
 name = "wq1"
 path = "exercises/workqueue/wq1/main.go"
 mode = "compile"
