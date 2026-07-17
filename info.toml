@@ -462,7 +462,8 @@ Two fixes, one lesson — the Reconcile contract:
        if err := r.Get(ctx, req.NamespacedName, &cm); err != nil {
 
 2. NotFound is not a failure — the object was deleted and the work is
-   simply gone. Swallow it and report success:
+   simply gone. Swallow it and report success (apierrors is
+   k8s.io/apimachinery/pkg/api/errors):
 
        if apierrors.IsNotFound(err) {
            return ctrl.Result{}, nil
