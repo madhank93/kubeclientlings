@@ -471,6 +471,20 @@ Two fixes, one lesson — the Reconcile contract:
        return ctrl.Result{}, err"""
 
 [[exercises]]
+name = "op2"
+path = "exercises/operator/op2/main.go"
+mode = "compile"
+hint = """
+Owns(&corev1.Secret{}) maps a child event back to its owner by reading the
+child's controller ownerRef — a bare child is invisible to it. Stamp the ref
+before creating (controllerutil is sigs.k8s.io/controller-runtime/pkg/controller/controllerutil):
+
+    if err := controllerutil.SetControllerReference(&parent, child, r.scheme); err != nil {
+        return ctrl.Result{}, err
+    }
+    if err := r.Create(ctx, child); err != nil && !apierrors.IsAlreadyExists(err) {"""
+
+[[exercises]]
 name = "wq1"
 path = "exercises/workqueue/wq1/main.go"
 mode = "compile"
