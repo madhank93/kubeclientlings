@@ -485,6 +485,23 @@ before creating (controllerutil is sigs.k8s.io/controller-runtime/pkg/controller
     if err := r.Create(ctx, child); err != nil && !apierrors.IsAlreadyExists(err) {"""
 
 [[exercises]]
+name = "op3"
+path = "exercises/operator/op3/main.go"
+mode = "compile"
+hint = """
+CreateOrUpdate GETS the live object into cm before your mutate fn runs, so
+anything set on cm beforehand is wiped on the update path. Desired state
+belongs INSIDE mutate — it runs on both the create and the update path:
+
+    _, err := controllerutil.CreateOrUpdate(ctx, r.Client, cm, func() error {
+        if cm.Data == nil {
+            cm.Data = map[string]string{}
+        }
+        cm.Data["replicas"] = strconv.Itoa(int(*dep.Spec.Replicas))
+        return controllerutil.SetControllerReference(&dep, cm, r.scheme)
+    })"""
+
+[[exercises]]
 name = "wq1"
 path = "exercises/workqueue/wq1/main.go"
 mode = "compile"
