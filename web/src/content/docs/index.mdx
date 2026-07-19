@@ -1,0 +1,64 @@
+---
+title: KubeClientlings
+description: Learn Kubernetes client-go the rustlings way — 52 exercises, clientset basics to operators.
+template: splash
+hero:
+  tagline: Learn Kubernetes client-go the rustlings way — 52 small exercises, fixed one at a time, from clientset setup to controller-runtime operators.
+  actions:
+    - text: Get started
+      link: /getting-started/
+      icon: right-arrow
+    - text: Browse the catalog
+      link: /catalog/
+      icon: open-book
+      variant: secondary
+      attrs:
+        class: cta-catalog
+    - text: View on GitHub
+      link: https://github.com/madhank93/kubeclientlings
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What is KubeClientlings?
+
+KubeClientlings is a set of small, broken-on-purpose Go programs that talk to a
+real Kubernetes cluster — [rustlings](https://rustlings.rust-lang.org/) for
+[client-go](https://github.com/kubernetes/client-go). An interactive terminal UI
+re-runs each exercise as you save, and every fix is verified against a local
+[kind](https://kind.sigs.k8s.io/) cluster, not mocks.
+
+<CardGrid>
+  <Card title="52 exercises" icon="puzzle">
+    17 topics across a beginner → advanced track: clientsets, informers,
+    workqueues, CRDs, server-side apply, webhooks, and controller-runtime
+    operators.
+  </Card>
+  <Card title="A real cluster" icon="rocket">
+    Every exercise runs against a local kind cluster. You watch real API
+    requests succeed — or get rejected — not stubbed responses.
+  </Card>
+  <Card title="Instant feedback" icon="seti:go">
+    A TUI re-runs the exercise on save; it advances only when the program
+    compiles, the linter is happy, and the in-cluster checks pass.
+  </Card>
+  <Card title="Learn by fixing" icon="open-book">
+    No videos, no slides. Read the failing check, fix the code, repeat — the
+    same loop you'll use debugging real controllers.
+  </Card>
+</CardGrid>
+
+## Start in three commands
+
+```sh
+git clone https://github.com/madhank93/kubeclientlings && cd kubeclientlings
+mise run up      # create the local kind cluster
+mise run watch   # launch the interactive TUI
+```
+
+Prefer zero local setup? Run it in the browser on the
+[iximiuz Labs playground](https://labs.iximiuz.com/playgrounds/kubeclientlings).
+
+See [Getting started](/getting-started/) for the full setup.
