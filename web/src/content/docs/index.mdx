@@ -4,6 +4,9 @@ description: Learn Kubernetes client-go the rustlings way — 52 exercises, clie
 template: splash
 hero:
   tagline: Learn Kubernetes client-go the rustlings way — 52 small exercises, fixed one at a time, from clientset setup to controller-runtime operators.
+  image:
+    alt: KubeClientlings
+    file: ../../assets/kubeclientlings.png
   actions:
     - text: Get started
       link: /getting-started/
@@ -21,6 +24,10 @@ hero:
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
+import AsciinemaPlayer from '../../components/AsciinemaPlayer.astro';
+
+<AsciinemaPlayer caption="client-go you actually run: fix a <span class='broken'>broken</span> exercise and watch it re-verified against a live kind cluster the moment you save — 52 exercises, clientsets to controller-runtime operators." />
+
 
 ## What is KubeClientlings?
 

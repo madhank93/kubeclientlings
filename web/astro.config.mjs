@@ -19,6 +19,7 @@ export default defineConfig({
 			title: 'KubeClientlings',
 			description: DESCRIPTION,
 			customCss: ['./src/styles/hero.css'],
+			favicon: '/favicon-32.png',
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/madhank93/kubeclientlings' },
 			],
@@ -26,9 +27,12 @@ export default defineConfig({
 			head: [
 				{ tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
 				{ tag: 'meta', attrs: { property: 'og:site_name', content: 'KubeClientlings' } },
-				{ tag: 'meta', attrs: { property: 'og:image', content: new URL(`${BASE}favicon.svg`, SITE).href } },
-				{ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary' } },
-				{ tag: 'meta', attrs: { name: 'twitter:image', content: new URL(`${BASE}favicon.svg`, SITE).href } },
+				{ tag: 'meta', attrs: { property: 'og:image', content: new URL(`${BASE}og.png`, SITE).href } },
+				{ tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
+				{ tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
+				{ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
+				{ tag: 'meta', attrs: { name: 'twitter:image', content: new URL(`${BASE}og.png`, SITE).href } },
+				{ tag: 'link', attrs: { rel: 'apple-touch-icon', href: `${BASE}apple-touch-icon.png` } },
 				{ tag: 'meta', attrs: { name: 'theme-color', content: '#326ce5' } },
 				{ tag: 'meta', attrs: { name: 'keywords', content: 'Kubernetes, client-go, controller-runtime, operator, rustlings, exercises, kind, informers, CRD' } },
 			],
