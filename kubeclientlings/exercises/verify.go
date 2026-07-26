@@ -1,6 +1,7 @@
 package exercises
 
 import (
+	"context"
 	"errors"
 	"os/exec"
 	"path/filepath"
@@ -38,7 +39,14 @@ func (s Status) String() string {
 // passes and the "I AM NOT DONE" marker is removed — lints it. The returned
 // Result carries the output to show the learner.
 func (e Exercise) Verify() (Status, Result) {
-	result, err := e.Run()
+	ctx, cancel := context.WithTimeout(context.Background(), e.RunTimeout())
+	defer cancel()
+	return e.VerifyContext(ctx)
+}
+
+// VerifyContext is Verify, abandoning the run when ctx is done.
+func (e Exercise) VerifyContext(ctx context.Context) (Status, Result) {
+	result, err := e.RunContext(ctx)
 	if err != nil {
 		return StatusFailing, result
 	}
@@ -48,7 +56,7 @@ func (e Exercise) Verify() (Status, Result) {
 		return StatusPending, result
 	}
 
-	if ok, out := Lint(e); !ok {
+	if ok, out := LintContext(ctx, e); !ok {
 		result.Out = out
 		result.Err = ""
 		return StatusLintFail, result
@@ -61,8 +69,15 @@ func (e Exercise) Verify() (Status, Result) {
 // when clean. If golangci-lint is not installed it degrades gracefully
 // (returns true with a note) rather than blocking progress forever.
 func Lint(e Exercise) (bool, string) {
+	ctx, cancel := context.WithTimeout(context.Background(), e.RunTimeout())
+	defer cancel()
+	return LintContext(ctx, e)
+}
+
+// LintContext is Lint, abandoning the run when ctx is done.
+func LintContext(ctx context.Context, e Exercise) (bool, string) {
 	dir := filepath.Dir(e.Path)
-	cmd := exec.Command("golangci-lint", "run", "./"+dir)
+	cmd := exec.CommandContext(ctx, "golangci-lint", "run", "./"+dir)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		return true, ""

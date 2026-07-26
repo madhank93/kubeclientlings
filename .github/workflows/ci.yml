@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: lint + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      # Exercises ship broken on purpose, so both tasks scope themselves to the
+      # tool source; see the task definitions in mise.toml.
+      - name: Lint the tool source
+        run: mise run lint
+      - name: Test the tool source
+        run: mise run test
+
+  catalog:
+    name: catalog.ts is in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      # Regenerating also validates info.toml: the generator fails on an entry
+      # naming a missing exercise or an unknown topic. Without this job that
+      # validation would never run anywhere.
+      - name: Regenerate the catalog
+        run: go run ./web/gen
+      - name: Fail if the committed catalog is stale
+        run: |
+          if ! git diff --quiet; then
+            echo "::error::catalog.ts / lesson-details are out of date."
+            echo "Run 'go run ./web/gen' and commit the result."
+            git diff --stat
+            exit 1
+          fi
