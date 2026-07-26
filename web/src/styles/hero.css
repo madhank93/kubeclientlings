@@ -1,3 +1,12 @@
+/* Keep the splash hero gopher modest — Starlight sizes the hero image to the
+   column, which renders the raw asset far larger than it needs to be. This
+   logo is taller than it is wide, so cap the height rather than the width. */
+.hero img {
+	max-height: 220px;
+	width: auto;
+	margin-inline: auto;
+}
+
 /* Trim the large empty gap around the splash hero — Starlight's default
    padding-block ramps up to 10rem. */
 [data-has-hero] .hero {
