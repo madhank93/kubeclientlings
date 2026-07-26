@@ -1,8 +1,11 @@
 package tui
 
 import (
+	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/progress"
@@ -36,7 +39,8 @@ type item struct {
 type Model struct {
 	infoFile string
 	tracker  *exercises.Tracker
-	watchCh  chan string
+	watchCh  chan tea.Msg
+	watcher  *fsnotify.Watcher
 
 	phase phase
 
@@ -107,8 +111,13 @@ func New(infoFile string) (Model, error) {
 		return Model{}, err
 	}
 
-	ch := make(chan string)
-	go startWatcher(ch)
+	// Exercise paths in info.toml are relative to the file's own directory,
+	// so anchor the watch there rather than on the process working directory.
+	ch := make(chan tea.Msg)
+	watcher, err := startWatcher(filepath.Join(filepath.Dir(infoFile), "exercises"), ch)
+	if err != nil {
+		return Model{}, err
+	}
 
 	sp := spinner.New()
 	sp.Spinner = spinner.Dot
@@ -122,6 +131,7 @@ func New(infoFile string) (Model, error) {
 		infoFile: infoFile,
 		tracker:  tracker,
 		watchCh:  ch,
+		watcher:  watcher,
 		keys:     defaultKeys(),
 		help:     h,
 		progress: progress.New(progress.WithDefaultGradient(), progress.WithoutPercentage()),
@@ -133,6 +143,13 @@ func New(infoFile string) (Model, error) {
 	m.cursor = m.firstSelectable()
 	m.moveToFirstPending()
 	return m, nil
+}
+
+// Close releases the file watcher. Safe to call on a zero Model.
+func (m Model) Close() {
+	if m.watcher != nil {
+		_ = m.watcher.Close()
+	}
 }
 
 // Init starts the watcher listener, the spinner, and verifies the current item.
