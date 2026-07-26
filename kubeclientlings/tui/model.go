@@ -1,8 +1,13 @@
 package tui
 
 import (
+	"context"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/progress"
@@ -36,7 +41,9 @@ type item struct {
 type Model struct {
 	infoFile string
 	tracker  *exercises.Tracker
-	watchCh  chan string
+	watchCh  chan tea.Msg
+	watcher  *fsnotify.Watcher
+	cancel   *cancelBox
 
 	phase phase
 
@@ -107,8 +114,13 @@ func New(infoFile string) (Model, error) {
 		return Model{}, err
 	}
 
-	ch := make(chan string)
-	go startWatcher(ch)
+	// Exercise paths in info.toml are relative to the file's own directory,
+	// so anchor the watch there rather than on the process working directory.
+	ch := make(chan tea.Msg)
+	watcher, err := startWatcher(filepath.Join(filepath.Dir(infoFile), "exercises"), ch)
+	if err != nil {
+		return Model{}, err
+	}
 
 	sp := spinner.New()
 	sp.Spinner = spinner.Dot
@@ -122,6 +134,8 @@ func New(infoFile string) (Model, error) {
 		infoFile: infoFile,
 		tracker:  tracker,
 		watchCh:  ch,
+		watcher:  watcher,
+		cancel:   &cancelBox{},
 		keys:     defaultKeys(),
 		help:     h,
 		progress: progress.New(progress.WithDefaultGradient(), progress.WithoutPercentage()),
@@ -135,12 +149,19 @@ func New(infoFile string) (Model, error) {
 	return m, nil
 }
 
+// Close releases the file watcher. Safe to call on a zero Model.
+func (m Model) Close() {
+	if m.watcher != nil {
+		_ = m.watcher.Close()
+	}
+}
+
 // Init starts the watcher listener, the spinner, and verifies the current item.
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		waitForChange(m.watchCh),
 		m.spinner.Tick,
-		verifyCmd(m.current()),
+		verifyCmd(m.cancel, m.current()),
 	)
 }
 
@@ -250,13 +271,46 @@ type verifiedMsg struct {
 	result exercises.Result
 }
 
-// verifyCmd runs the gated verification off the UI thread.
-func verifyCmd(e exercises.Exercise) tea.Cmd {
+// cancelBox holds the cancel func of the in-flight verification. It is a
+// pointer field on Model so that every copy of the value-typed model — and
+// the goroutine running the verification — share one box.
+type cancelBox struct {
+	mu sync.Mutex
+	fn context.CancelFunc
+}
+
+// set installs fn, cancelling whatever run it supersedes.
+func (b *cancelBox) set(fn context.CancelFunc) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.fn != nil {
+		b.fn()
+	}
+	b.fn = fn
+}
+
+// cancel stops the in-flight run, if any.
+func (b *cancelBox) cancel() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.fn != nil {
+		b.fn()
+		b.fn = nil
+	}
+}
+
+// verifyCmd runs the gated verification off the UI thread, under the
+// exercise's timeout and registered with box so `esc` can abandon a run that
+// has wedged — a real risk here, where every run talks to a live cluster.
+func verifyCmd(box *cancelBox, e exercises.Exercise) tea.Cmd {
 	if e.Name == "" {
 		return nil
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), e.RunTimeout())
+	box.set(cancel)
 	return func() tea.Msg {
-		st, res := e.Verify()
+		st, res := e.VerifyContext(ctx)
+		cancel()
 		return verifiedMsg{name: e.Name, status: st, result: res}
 	}
 }

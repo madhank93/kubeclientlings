@@ -110,7 +110,7 @@ func (m Model) welcome() string {
 		"  • Press n to move to the next exercise",
 	)
 
-	keys := dimStyle.Render("Keys   ↑↓/jk move · ⏎ run · e edit · h hint · r reset · n next · q quit")
+	keys := dimStyle.Render("Keys   ↑↓/jk move · ⏎ run · esc cancel · e edit · h hint · r reset · n next · q quit")
 	cta := markStyle.Render("press any key to start →")
 
 	content := lipgloss.JoinVertical(lipgloss.Left,

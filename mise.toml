@@ -49,7 +49,10 @@ run = "kubectl --context kind-kubeclientlings delete ns -l kubeclientlings.dev/e
 
 [tasks.lint]
 description = "Lint the tool source (exercises are broken on purpose)"
-run = "golangci-lint run ./kubeclientlings ./kubeclientlings/cmd ./kubeclientlings/exercises ./kubeclientlings/cluster ./kubeclientlings/preflight ./kubeclientlings/tui ./kubeclientlings/ui ./internal/exkit"
+# --timeout: the default is 1m, which is enough on a warm local cache but not
+# on a cold CI runner — client-go drags in the whole k8s API surface and
+# type-checking it takes longer than that.
+run = "golangci-lint run --timeout=5m ./kubeclientlings ./kubeclientlings/cmd ./kubeclientlings/exercises ./kubeclientlings/cluster ./kubeclientlings/preflight ./kubeclientlings/tui ./kubeclientlings/ui ./internal/exkit"
 
 [tasks.test]
 description = "Test the tool source with the race detector"

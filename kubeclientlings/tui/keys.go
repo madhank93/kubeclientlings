@@ -11,6 +11,7 @@ type keyMap struct {
 	Reset  key.Binding
 	Next   key.Binding
 	Search key.Binding
+	Cancel key.Binding
 	Quit   key.Binding
 }
 
@@ -48,6 +49,10 @@ func defaultKeys() keyMap {
 			key.WithKeys("/"),
 			key.WithHelp("/", "search"),
 		),
+		Cancel: key.NewBinding(
+			key.WithKeys("esc"),
+			key.WithHelp("esc", "cancel run"),
+		),
 		Quit: key.NewBinding(
 			key.WithKeys("q", "ctrl+c"),
 			key.WithHelp("q", "quit"),
@@ -62,5 +67,5 @@ func (k keyMap) ShortHelp() []key.Binding {
 
 // FullHelp implements help.KeyMap.
 func (k keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{k.Up, k.Down}, {k.Run, k.Edit, k.Hint, k.Reset}, {k.Next, k.Search, k.Quit}}
+	return [][]key.Binding{{k.Up, k.Down}, {k.Run, k.Edit, k.Hint, k.Reset}, {k.Next, k.Search, k.Cancel, k.Quit}}
 }
