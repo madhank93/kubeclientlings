@@ -18,6 +18,7 @@ export default defineConfig({
 		starlight({
 			title: 'KubeClientlings',
 			description: DESCRIPTION,
+			logo: { src: './src/assets/kubeclientlings.png' },
 			customCss: ['./src/styles/hero.css'],
 			favicon: '/favicon-32.png',
 			social: [

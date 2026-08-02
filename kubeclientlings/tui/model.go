@@ -66,6 +66,15 @@ type Model struct {
 	filtering bool   // typing a search query in the list pane
 	filter    string // current search query
 
+	// showHelp raises the help pop-up. It is composited over the frame rather
+	// than replacing a pane, so the exercise you are reading stays visible.
+	showHelp bool
+	helpVP   viewport.Model
+
+	// verifyStart is when the current run began, for the elapsed clock. A run
+	// that has wedged looks exactly like a slow one without it.
+	verifyStart time.Time
+
 	total  int
 	width  int
 	height int
