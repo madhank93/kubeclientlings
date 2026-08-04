@@ -56,6 +56,7 @@ type Model struct {
 	verifying bool
 	hasResult bool
 	showHint  bool
+	showNotes bool // teaching walk-through: auto on pass, toggled with the Explain key
 
 	keys     keyMap
 	help     help.Model
