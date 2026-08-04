@@ -147,9 +147,9 @@ func writeCatalog(byTopic map[string][]exercises.Exercise) error {
 }
 
 // writeDetail renders one exercise's modal content as markdown: the
-// broken-on-purpose source and the hint behind a <details>. The worked
-// solution is deliberately NOT embedded — the modal links to it on GitHub so
-// the site never spoils the answer inline.
+// broken-on-purpose source, then the hint and the teaching walk-through, each
+// behind its own <details>. The worked solution is deliberately NOT embedded —
+// the modal links to it on GitHub so the site never spoils the answer inline.
 func writeDetail(e exercises.Exercise) error {
 	files, err := filepath.Glob(filepath.Join(filepath.Dir(e.Path), "*.go"))
 	if err != nil {
@@ -172,6 +172,10 @@ func writeDetail(e exercises.Exercise) error {
 		fmt.Fprintf(&b, "<details>\n<summary>Show hint (spoiler)</summary>\n\n```text\n%s\n```\n\n</details>\n\n", h)
 	}
 
+	if n := notesBody(e); n != "" {
+		fmt.Fprintf(&b, "<details>\n<summary>Show walk-through (spoiler)</summary>\n\n%s\n\n</details>\n\n", n)
+	}
+
 	solDir := "solutions/" + strings.TrimPrefix(filepath.ToSlash(filepath.Dir(e.Path)), "exercises/")
 	if _, err := os.Stat(solDir); err != nil {
 		return fmt.Errorf("%s: no solution dir %s", e.Name, solDir)
@@ -179,6 +183,20 @@ func writeDetail(e exercises.Exercise) error {
 	fmt.Fprintf(&b, "**Worked solution:** [view it on GitHub ↗](%s/%s/main.go) — try the hint first.\n", repoBlob, solDir)
 
 	return os.WriteFile(filepath.Join(detailsDir, e.Name+".md"), []byte(b.String()), 0o644)
+}
+
+// notesBody returns the exercise's notes.md with its leading heading stripped
+// — the modal already names the exercise — or "" when it has no walk-through.
+func notesBody(e exercises.Exercise) string {
+	md := strings.TrimSpace(e.Notes())
+	if md == "" {
+		return ""
+	}
+	lines := strings.Split(md, "\n")
+	if strings.HasPrefix(lines[0], "#") {
+		lines = lines[1:]
+	}
+	return strings.TrimSpace(strings.Join(lines, "\n"))
 }
 
 // js renders s as a JavaScript string literal.
