@@ -31,6 +31,8 @@ func main() {
 		exkit.Failf("deleting pod: %v", err)
 	}
 
+	// WaitFor polls the closure until it returns (true, nil), a non-nil error,
+	// or the context expires.
 	exkit.WaitFor(ctx, "pod to disappear", func(ctx context.Context) (bool, error) {
 		_, err := cs.CoreV1().Pods(ns).Get(ctx, "doomed", metav1.GetOptions{})
 		// This treats EVERY error as fatal — including the NotFound that

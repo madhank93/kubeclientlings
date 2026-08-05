@@ -21,13 +21,17 @@ func main() {
 	defer cancel()
 
 	replicas := int32(2)
+	// One map used in BOTH places below — that's what makes the invariant
+	// structural instead of something you have to remember.
 	labels := map[string]string{"app": "web"}
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: "web", Namespace: ns},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
+			// How the Deployment FINDS its pods (immutable after creation)…
 			Selector: &metav1.LabelSelector{MatchLabels: labels},
 			Template: corev1.PodTemplateSpec{
+				// …and what the pods it stamps out will be labelled with.
 				ObjectMeta: metav1.ObjectMeta{Labels: labels},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{Name: "web", Image: exkit.Image}},

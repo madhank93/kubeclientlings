@@ -23,6 +23,9 @@ func main() {
 		exkit.Failf("creating pod: %v", err)
 	}
 
+	// Object-shaped body => a merge-style patch type. StrategicMergePatchType
+	// merges maps key-by-key (so the existing app label survives) and merges
+	// lists by their patch-merge key rather than replacing them.
 	patch := []byte(`{"metadata":{"labels":{"tier":"frontend"}}}`)
 	_, err := cs.CoreV1().Pods(ns).Patch(ctx, "hello", types.StrategicMergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {

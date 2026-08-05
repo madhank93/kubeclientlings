@@ -35,6 +35,8 @@ func main() {
 		}
 	}
 
+	// Sent as ?labelSelector=app%3Dweb — the API SERVER filters, so only the
+	// three matching pods ever cross the wire.
 	webPods, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: "app=web",
 	})

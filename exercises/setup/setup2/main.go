@@ -23,6 +23,8 @@ import (
 )
 
 func main() {
+	// The setup1 loading dance: standard rules ($KUBECONFIG, then
+	// ~/.kube/config) with the context pinned to the kind cluster.
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
 	overrides := &clientcmd.ConfigOverrides{CurrentContext: "kind-kubeclientlings"}
 	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
@@ -36,6 +38,8 @@ func main() {
 	// in favour of an empty one, and the error is swallowed with _.
 	clientset, _ := kubernetes.NewForConfig(&rest.Config{})
 
+	// Nodes() takes no namespace — Node is cluster-scoped. kind gives us a
+	// three-node cluster, which is what the check below expects.
 	nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		fmt.Printf("❌ could not list nodes: %v\n", err)

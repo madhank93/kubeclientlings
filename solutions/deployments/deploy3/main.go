@@ -25,6 +25,10 @@ func main() {
 		exkit.Failf("creating deployment: %v", err)
 	}
 
+	// "name" is the patch-merge key for containers (a struct tag on PodSpec),
+	// so the server merges into THAT container instead of guessing by index.
+	// Touching spec.template also rotates the pod-template hash — which is
+	// what makes this a rolling update rather than an in-place edit.
 	patch := []byte(`{"spec":{"template":{"spec":{"containers":[{"name":"web","image":"` + newImage + `"}]}}}}`)
 	_, err := cs.AppsV1().Deployments(ns).Patch(ctx, "web", types.StrategicMergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
