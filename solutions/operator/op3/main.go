@@ -47,14 +47,21 @@ func (r *infoWriter) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		Name:      dep.Name + "-info",
 		Namespace: dep.Namespace,
 	}}
+	// CreateOrUpdate Gets into cm FIRST, so anything set before this call is
+	// destroyed on the update path (creation still works, which is why the
+	// bug ships). It also skips the write entirely when mutate changes
+	// nothing — that no-op case is what stops the update→event→reconcile loop.
 	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, cm, func() error {
 		// This runs on BOTH paths — after a NotFound (about to Create) and
 		// after a successful Get (cm now holds the LIVE object). Lay the
-		// desired state over whatever is there.
+		// desired state over whatever is there, touching only fields we own,
+		// and never the name/namespace the Get used.
 		if cm.Data == nil {
 			cm.Data = map[string]string{}
 		}
 		cm.Data["replicas"] = strconv.Itoa(int(*dep.Spec.Replicas))
+		// The ownerRef is desired state too — and it's what makes the
+		// Owns(&corev1.ConfigMap{}) routing repair drift on the child.
 		return controllerutil.SetControllerReference(&dep, cm, r.scheme)
 	})
 	return ctrl.Result{}, err
