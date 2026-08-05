@@ -50,10 +50,14 @@ func (r *childMinder) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Res
 		StringData: map[string]string{"owner": parent.Name},
 	}
 	// The ownerRef is the whole story: it is what Owns(&corev1.Secret{})
-	// reads to turn a child event into a request for the parent.
+	// reads to turn a child event into a request for the parent. It needs the
+	// Scheme to resolve the parent's GVK from its Go type, and it sets
+	// Controller:true — an object may have many owners but only ONE
+	// controller ref, which is the one that drives the routing.
 	if err := controllerutil.SetControllerReference(&parent, child, r.scheme); err != nil {
 		return ctrl.Result{}, err
 	}
+	// Reconciles are re-entrant, so "already there" is a normal outcome.
 	if err := r.Create(ctx, child); err != nil && !apierrors.IsAlreadyExists(err) {
 		return ctrl.Result{}, err
 	}
@@ -76,6 +80,8 @@ func main() {
 	}
 
 	r := &childMinder{Client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	// For(X): reconcile X — each event enqueues that object's own key.
+	// Owns(Y): also watch Y, but map each event back to Y's controller OWNER.
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.ConfigMap{}).
 		Owns(&corev1.Secret{}).

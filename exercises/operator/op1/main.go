@@ -74,6 +74,8 @@ func main() {
 
 	ctrl.SetLogger(logr.Discard()) // keep exercise output clean
 
+	// The manager owns everything ctrl2 built by hand: informers, cache,
+	// workqueue, workers, rate limiting.
 	mgr, err := ctrl.NewManager(exkit.MustRESTConfig(), ctrl.Options{
 		Scheme:  scheme.Scheme,                           // client-go's built-in types
 		Metrics: metricsserver.Options{BindAddress: "0"}, // no metrics port
