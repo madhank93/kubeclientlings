@@ -31,11 +31,16 @@ func main() {
 		}
 	}
 
+	// The list carries a resourceVersion of its OWN: the exact point in the
+	// API server's history that this snapshot represents.
 	list, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		exkit.Failf("listing pods: %v", err)
 	}
 
+	// Resuming from it means no gap (unset would start "now" and could miss
+	// changes) and no replay ("0" would re-deliver old-1..3 as Added).
+	// Treat the value as opaque — never parse or increment it.
 	watcher, err := cs.CoreV1().Pods(ns).Watch(ctx, metav1.ListOptions{
 		ResourceVersion: list.ResourceVersion,
 	})

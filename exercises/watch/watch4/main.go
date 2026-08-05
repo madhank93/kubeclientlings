@@ -31,6 +31,8 @@ func main() {
 		exkit.Failf("creating pod: %v", err)
 	}
 
+	// The pipeline is broadcaster (in-memory fan-out) → sink (writes to the
+	// API) → recorder (what your reconcile loop calls).
 	broadcaster := record.NewBroadcaster()
 	// The recorder below happily accepts the event — and it evaporates.
 	// The broadcaster was never pointed at the API server: nothing here
