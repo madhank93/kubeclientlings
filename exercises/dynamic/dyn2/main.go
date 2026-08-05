@@ -33,6 +33,7 @@ func main() {
 	}
 
 	dyn := exkit.MustDynamic()
+	// Core group is "", the resource is the lowercase plural path segment.
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}
 
 	u, err := dyn.Resource(gvr).Namespace(ns).Get(ctx, "greeting", metav1.GetOptions{})
