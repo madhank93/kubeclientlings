@@ -43,7 +43,14 @@ func main() {
 	if err != nil {
 		exkit.Failf("reading the terminating object: %v", err)
 	}
+	// Clearing the list is fine here because ours is the only finalizer. In a
+	// real controller, remove only YOUR string (controllerutil.RemoveFinalizer)
+	// — several controllers can hold claims on one object, and the delete
+	// completes when the LAST one goes. Remove it only after cleanup actually
+	// succeeded: returning the error instead keeps the object around to retry.
 	got.Finalizers = nil
+	// No second Delete: the deletion was already requested and queued. Seeing
+	// the list go empty is what lets the server finish it.
 	if _, err := cs.CoreV1().ConfigMaps(ns).Update(ctx, got, metav1.UpdateOptions{}); err != nil {
 		exkit.Failf("removing the finalizer: %v", err)
 	}
