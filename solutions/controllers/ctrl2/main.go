@@ -34,7 +34,9 @@ func main() {
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			// MetaNamespaceKeyFunc builds "namespace/name" — the one true
-			// currency between informers and workers.
+			// currency between informers and workers. Enqueueing a KEY, not
+			// the object, is what makes reconciliation level-triggered: the
+			// worker re-reads current state instead of acting on a snapshot.
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err != nil {
 				return
@@ -60,6 +62,8 @@ func main() {
 	if shutdown {
 		exkit.Failf("queue shut down before the worker got a key")
 	}
+	// Reverses MetaNamespaceKeyFunc. A bare name would split to namespace ""
+	// and Pods("") builds a cluster-wide URL a namespaced Patch can't use.
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		exkit.Failf("splitting key %q: %v", key, err)

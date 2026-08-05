@@ -46,7 +46,11 @@ func main() {
 				q.Add(item)
 			}
 			// The other half of the contract: processing is finished, and
-			// the held-back copy (if any) may now be delivered.
+			// the held-back copy (if any) may now be delivered. A key is in
+			// "processing" at most once, which is what lets N workers share
+			// one queue without ever reconciling the same object twice.
+			// Real loops write `defer q.Done(key)` right after Get so a
+			// panic can't strand the key.
 			q.Done(item)
 		}
 		processed <- got
