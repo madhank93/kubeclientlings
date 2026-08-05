@@ -37,13 +37,20 @@ func main() {
 		exkit.Failf("creating the deployment: %v", err)
 	}
 
+	// A different URL (.../deployments/web/scale) exposing a different, tiny
+	// type: autoscaling/v1.Scale. Every scalable resource — including CRDs
+	// that enable it — exposes the same one, which is how a single HPA scales
+	// types it has no compile-time knowledge of.
 	scale, err := cs.AppsV1().Deployments(ns).GetScale(ctx, "web", metav1.GetOptions{})
 	if err != nil {
 		exkit.Failf("reading the scale subresource: %v", err)
 	}
 
 	// Spec.Replicas is the desired count — the lever the scale endpoint honors.
+	// Status.Replicas is the observed count and is ignored on write.
 	scale.Spec.Replicas = 3
+	// Touches one number instead of PUTting the whole Deployment — and RBAC
+	// can grant update on deployments/scale without update on deployments.
 	if _, err := cs.AppsV1().Deployments(ns).UpdateScale(ctx, "web", scale, metav1.UpdateOptions{}); err != nil {
 		exkit.Failf("updating the scale subresource: %v", err)
 	}
