@@ -1,11 +1,27 @@
 ## ctrl3 — leader election and its timing contract
 
 ```go
-LeaseDuration:   15 * time.Second, // must be >  RenewDeadline
-RenewDeadline:   10 * time.Second, // must be >  RetryPeriod
+LeaseDuration:   15 * time.Second, // must be > RenewDeadline
+RenewDeadline:   10 * time.Second, // must be > RetryPeriod * 1.2
 RetryPeriod:     2 * time.Second,
 ReleaseOnCancel: true,
 ```
+
+`NewLeaderElector` enforces exactly two inequalities (plus "all three > 0"):
+
+```go
+if lec.LeaseDuration <= lec.RenewDeadline {
+	return nil, fmt.Errorf("leaseDuration must be greater than renewDeadline")
+}
+if lec.RenewDeadline <= time.Duration(JitterFactor*float64(lec.RetryPeriod)) {
+	return nil, fmt.Errorf("renewDeadline must be greater than retryPeriod*JitterFactor")
+}
+```
+
+`JitterFactor` is `1.2`. So the second rule is not simply
+`RenewDeadline > RetryPeriod` — retries are jittered up to 20% late, and the
+deadline has to clear the *worst case* retry, not the nominal one. With 10s and
+2s there is plenty of room; tighten the numbers and this is the check you trip.
 
 **Why it works**
 
@@ -28,7 +44,7 @@ acting *before* anyone else is allowed to take over. Invert it — as the broken
 version does with 5s and 10s — and there is a window where a healthy leader
 still believes it leads while a challenger has already claimed the lease. Two
 active controllers, which is exactly the outcome the whole mechanism exists to
-prevent. `NewLeaderElector` validates this and refuses to build.
+prevent. That is the check `NewLeaderElector` refuses to build past.
 
 **Key detail:** `OnStoppedLeading` must **terminate the process** (or at least
 stop every reconcile loop), and it must do so fast. Losing the lease usually

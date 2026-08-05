@@ -45,5 +45,5 @@ with discovery instead, and your client keeps working across cluster versions.
 **References**
 
 - Discovery client: https://pkg.go.dev/k8s.io/client-go/discovery
-- API groups & versioning: https://kubernetes.io/docs/reference/using-api/#api-groups-and-versioning
+- API groups: https://kubernetes.io/docs/reference/using-api/#api-groups
 - Deprecated API migration guide: https://kubernetes.io/docs/reference/using-api/deprecation-guide/

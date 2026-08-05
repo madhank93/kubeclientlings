@@ -37,8 +37,9 @@ means.
   produces `OperationResultNone` and skips the write entirely. Without that, the
   update triggers an event, which triggers a reconcile, which updates again —
   the classic hot loop.
-- **Never change the object's name, namespace, or anything immutable.** The key
-  was used to fetch; changing it makes the subsequent write nonsense.
+- **Never change the object's name or namespace.** This one is *enforced* —
+  the wrapper re-derives the key after your function runs and fails with
+  `MutateFn cannot mutate object name and/or object namespace` if it moved.
 - **Set the ownerRef inside too.** It's part of desired state, and the child
   needs it for the `Owns()` routing that drives drift repair (op2).
 
