@@ -33,13 +33,18 @@ func main() {
 		exkit.Failf("creating configmap: %v", err)
 	}
 
+	// Every call is recorded in order — READS included, which is why real
+	// tests filter for the write they care about instead of counting.
 	actions := cs.Actions()
 	exkit.AssertEqual("actions the fake recorded", len(actions), 1)
 
-	// The verb you called was "create", on resource "configmaps".
+	// The verb you called was "create", on resource "configmaps". Verbs are
+	// get/list/watch/create/update/patch/delete; for subresource writes the
+	// verb is still "update" and GetSubresource() tells them apart.
 	exkit.AssertTrue("the recorded action was a create on configmaps", actions[0].Matches("create", "configmaps"))
 
-	// A create action carries the object that was sent.
+	// A create action carries the object that was sent — asserting on the
+	// payload is what makes this a real test rather than "it didn't error".
 	create := actions[0].(k8stesting.CreateAction)
 	obj := create.GetObject().(*corev1.ConfigMap)
 	exkit.AssertEqual("the audited configmap's data", obj.Data["k"], "v")

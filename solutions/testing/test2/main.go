@@ -30,7 +30,14 @@ func main() {
 	cs := fake.NewClientset()
 
 	// Every attempt to CREATE a POD now fails, as if the apiserver were down.
+	// Prepend, not Add: this has to sit ahead of the default tracker reactor.
+	// The (verb, resource) pair must match the call — a mismatched reactor is
+	// silently dead code, never invoked. "*" wildcards both.
 	cs.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		// handled=true short-circuits the tracker; returning false would fall
+		// through, which is how a reactor stays selective.
+		// Use the real apierrors constructors so the Is* checks in the code
+		// under test actually match.
 		return true, nil, apierrors.NewInternalError(fmt.Errorf("etcd unavailable"))
 	})
 
