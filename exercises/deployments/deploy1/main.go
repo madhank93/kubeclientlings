@@ -22,7 +22,7 @@ func main() {
 	ctx, cancel, cs, ns := exkit.Begin("deploy1")
 	defer cancel()
 
-	replicas := int32(2)
+	replicas := int32(2) // *int32 field, hence the named variable
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: "web", Namespace: ns},
 		Spec: appsv1.DeploymentSpec{

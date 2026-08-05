@@ -28,12 +28,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	// The loaded config — not a fresh &rest.Config{}, which would construct
+	// happily and then fail on the first request with no host to dial. The
+	// error is handled: a bad CA bundle or exec plugin surfaces right here.
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		fmt.Printf("❌ could not create clientset: %v\n", err)
 		os.Exit(1)
 	}
 
+	// Nodes() takes no namespace: Node is cluster-scoped. The method signature
+	// is how client-go encodes an API resource's scope.
 	nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		fmt.Printf("❌ could not list nodes: %v\n", err)

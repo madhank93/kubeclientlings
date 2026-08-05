@@ -25,10 +25,12 @@ import (
 func main() {
 	config := exkit.MustRESTConfig()
 
-	config.QPS = 50
-	config.Burst = 100
-	config.Timeout = 10 * time.Second
-	config.UserAgent = "kubeclientlings/setup3"
+	// Tune BEFORE NewForConfig: the constructor copies the config, so mutating
+	// it afterwards changes nothing.
+	config.QPS = 50                             // client-side token bucket; the default 5 starves controllers
+	config.Burst = 100                          // keep >= QPS or a burst throttles the moment it starts
+	config.Timeout = 10 * time.Second           // bounds the whole request; a wedged server can't hang us
+	config.UserAgent = "kubeclientlings/setup3" // shows up in audit logs — names who is hammering the API
 
 	if config.QPS < 20 {
 		fmt.Printf("❌ QPS is %.0f — the default (5) starves controllers; raise it to at least 20\n", config.QPS)
