@@ -23,8 +23,12 @@ err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
   `resourceVersion`, re-applies the mutation and tries again. Hoisting the
   `Get` outside the closure would retry with the same stale version forever.
 - `retry.RetryOnConflict` retries only on `IsConflict` errors and returns
-  anything else immediately. `retry.DefaultRetry` is a short backoff (5 steps,
-  ~10ms base) sized for exactly this.
+  anything else immediately. `retry.DefaultRetry` is
+  `wait.Backoff{Steps: 5, Duration: 10ms, Factor: 1.0, Jitter: 0.1}` — note
+  `Factor: 1.0`, so it does **not** grow: five attempts roughly 10ms apart with
+  a little jitter. That is deliberate. A write conflict clears as soon as the
+  other writer finishes, so retrying promptly beats backing off; the growing
+  backoff in the `workqueue` topic solves a different problem.
 
 **Key detail:** for Pods the conflict is not theoretical — the kubelet writes
 `status` continuously, so the resourceVersion of a running pod changes on its
@@ -43,4 +47,4 @@ Apply (the `ssa` topic) avoid the whole cycle.
 
 - `retry.RetryOnConflict`: https://pkg.go.dev/k8s.io/client-go/util/retry#RetryOnConflict
 - Resource versions: https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions
-- Concurrency control: https://kubernetes.io/docs/reference/using-api/api-concepts/#optimistic-concurrency-control
+- HTTP PUT, conflicts and dropped fields: https://kubernetes.io/docs/reference/using-api/api-concepts/#update-mechanism-update

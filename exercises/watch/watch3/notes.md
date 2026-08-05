@@ -12,10 +12,14 @@ watcher, err := watchtools.NewRetryWatcherWithContext(ctx, list.ResourceVersion,
 
 **Why it works**
 
-- A raw watch is *expected* to end. API servers close idle streams (there's a
-  randomised timeout around an hour), load balancers cut long connections,
-  networks blip. Every one of those closes `ResultChan()`, and naive code reads
-  the closed channel and exits.
+- A raw watch is *expected* to end — on a timer, by design. The API server
+  computes each watch's lifetime as
+  `minRequestTimeout * (rand.Float64() + 1.0)`: a random value between 1× and
+  2× the `--min-request-timeout` flag. The randomisation is deliberate, so that
+  a thousand clients that connected together don't all reconnect together.
+  Load balancers cutting long connections and ordinary network blips do the
+  rest. Every one of those closes `ResultChan()`, and naive code reads the
+  closed channel and exits.
 - `RetryWatcher` wraps your watch function: when the stream dies it reconnects,
   passing the resourceVersion of the **last event it delivered**. Your consumer
   sees one uninterrupted channel and never learns a reconnect happened.

@@ -29,12 +29,18 @@ to look like integers today; you must never parse, compare or increment them.
 The only valid operations are "pass it back to the server" and "compare for
 equality".
 
-A concrete version can also go stale. If your client is slow or disconnected
-long enough for the server's history window (its watch cache, ~5 minutes by
-default) to move past you, the watch fails with a `410 Gone`
-`watch.Error` event. The required recovery is to List again and restart from
-the new version — which is precisely the loop `Reflector` implements inside
-every informer, and why "just use an informer" is the standard advice.
+A concrete version can also go stale. The API server keeps only a bounded
+sliding window of recent events per resource (the **watch cache**). If your
+client is slow or disconnected long enough for that window to move past your
+resourceVersion, the watch fails with a `410 Gone` delivered as a
+`watch.Error` event carrying a `*metav1.Status`.
+
+Don't code against a specific window size — it is capacity-bounded as well as
+time-bounded, it varies by resource and cluster load, and the default has
+changed across releases. Code against the **error** instead: on `410`, List
+again and restart from the new version. That recovery loop is precisely what
+`Reflector` implements inside every informer, and it is the honest reason
+"just use an informer" is the standard advice for anything long-lived.
 
 **References**
 

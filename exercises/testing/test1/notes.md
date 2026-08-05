@@ -43,8 +43,18 @@ For anything that depends on real API-server behaviour, use `envtest`
 The fake is for unit tests of *your* logic; envtest is for integration tests of
 the interaction.
 
-Note `fake.NewClientset` is the current constructor — the older
-`fake.NewSimpleClientset` is deprecated.
+Note on the two constructors: `NewSimpleClientset` is **not** deprecated (no
+`Deprecated:` marker in client-go), but `NewClientset` is the one to reach for.
+Its doc comment states the difference:
+
+> Compared to NewSimpleClientset, the Clientset returned here supports field
+> tracking and thus server-side apply.
+
+So if the code under test uses `Apply` (the `ssa` topic), you need
+`NewClientset` — under `NewSimpleClientset` the apply path has no
+`managedFields` to track. That same comment warns SSA support for **CRDs** is
+still missing, so an apply against a custom resource is not faithfully faked by
+either.
 
 **References**
 

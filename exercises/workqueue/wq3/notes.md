@@ -27,8 +27,8 @@ handleErr := func(key string) {
   the queue, but any future change to that object generates a new event and a
   new enqueue with a clean counter. You lose the retry loop, not the object.
 
-**Key detail:** this three-branch shape is the canonical `handleErr` in every
-client-go controller, and it belongs *around* the reconcile, not inside it:
+**Key detail:** this three-branch shape belongs *around* the reconcile, not
+inside it:
 
 ```go
 func (c *Controller) handleErr(err error, key string) {
@@ -50,11 +50,25 @@ object (the `watch` topic) or set a `Degraded` condition on its status, so the
 failure is visible in `kubectl describe` rather than only in a log line that
 scrolled past.
 
-`maxRetries = 3` is `sample-controller`'s value and a reasonable default;
-`5` is common too. Match it to how transient your failures actually are.
+Worth knowing where this pattern does and doesn't appear upstream.
+`sample-controller` **does not** cap retries at all — it only does
+`AddRateLimited` on error and `Forget` on success, so a poison item there
+retries forever (slowly). The capped form is what the real controllers in
+`kubernetes/kubernetes` use, and both `deployment` and `endpointslice` set:
+
+```go
+maxRetries = 15
+```
+
+15 attempts under the default limiter (5ms doubling to a 1000s ceiling) spans
+several minutes of retrying before giving up. The `3` in this exercise keeps
+the run fast; pick your own from how transient your failures really are, and
+lean higher than feels natural — dropping a key is permanent until something
+else touches the object.
 
 **References**
 
 - `workqueue`: https://pkg.go.dev/k8s.io/client-go/util/workqueue
-- sample-controller `handleErr`: https://github.com/kubernetes/sample-controller/blob/master/controller.go
+- sample-controller's loop (no cap — compare): https://github.com/kubernetes/sample-controller/blob/master/controller.go
+- `maxRetries = 15` in the Deployment controller: https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/deployment/deployment_controller.go
 - `utilruntime.HandleError`: https://pkg.go.dev/k8s.io/apimachinery/pkg/util/runtime#HandleError
