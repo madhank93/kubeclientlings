@@ -16,12 +16,16 @@ import (
 )
 
 type Widget struct {
+	// Inline: apiVersion/kind land on the OUTER object, not nested.
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              WidgetSpec `json:"spec"`
 }
 
 type WidgetSpec struct {
+	// The tag must equal the map key exactly. A mismatch is not an error —
+	// the field just stays zero, like a JSON document missing that key.
+	// int64 because JSON has a single numeric type.
 	Size int64 `json:"size"`
 }
 
@@ -34,6 +38,9 @@ func main() {
 		"spec":       map[string]any{"size": int64(7)},
 	}
 
+	// Reflection over the map, matched by json tag — the same rules as
+	// encoding/json, without the marshal round-trip. This is the seam that
+	// lets typed code sit on top of the dynamic client.
 	var w Widget
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u, &w); err != nil {
 		exkit.Failf("converting unstructured to Widget: %v", err)
