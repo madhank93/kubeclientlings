@@ -28,8 +28,10 @@ func main() {
 
 	dyn := exkit.MustDynamic()
 
-	// Core group is the empty string, and the resource is the plural path
-	// segment — exactly what you see in the URL /api/v1/.../pods.
+	// Core group is the empty string (core lives at /api/v1, everything else
+	// at /apis/<group>/<version>), and the resource is the plural path
+	// segment — exactly what you see in the URL /api/v1/.../pods. When the
+	// plural isn't obvious, resolve it with a RESTMapper instead of guessing.
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
 
 	list, err := dyn.Resource(gvr).Namespace(ns).List(ctx, metav1.ListOptions{})

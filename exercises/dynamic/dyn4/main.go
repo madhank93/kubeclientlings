@@ -28,6 +28,8 @@ func main() {
 		exkit.Failf("asking the server about the group/version: %v", err)
 	}
 
+	// Each APIResource carries what a generic client needs: the plural Name,
+	// the Kind, whether it's Namespaced, its Verbs and ShortNames.
 	found := false
 	for _, r := range resources.APIResources {
 		if r.Name == "deployments" {

@@ -18,7 +18,9 @@ func main() {
 
 	disco := exkit.MustDiscovery()
 
-	// Deployments have lived in apps/v1 since Kubernetes 1.9.
+	// Deployments have lived in apps/v1 since Kubernetes 1.9. Asking for a
+	// group/version the server doesn't serve is an error, not an empty list —
+	// which is how kubectl avoids hardcoding dead endpoints.
 	resources, err := disco.ServerResourcesForGroupVersion("apps/v1")
 	if err != nil {
 		exkit.Failf("asking the server about apps/v1: %v", err)
