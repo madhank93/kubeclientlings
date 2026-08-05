@@ -28,8 +28,14 @@ func main() {
 	podInformer := factory.Core().V1().Pods()
 
 	added := make(chan string, 8)
+	// Registering only appends a listener — it starts no goroutine and opens
+	// no watch. Do it BEFORE Start or you can miss the initial batch. Every
+	// pre-existing object is also delivered to AddFunc during the initial
+	// sync, so handlers must be idempotent.
 	_, err := podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
+			// Handlers run on the informer's goroutine: never block or do
+			// I/O here. Real controllers enqueue a key and return.
 			if pod, ok := obj.(*corev1.Pod); ok {
 				added <- pod.Name
 			}

@@ -28,7 +28,10 @@ func main() {
 	}
 
 	// WithNamespace narrows the informer's List+Watch to one namespace:
-	// smaller cache, less API-server load, no other tenants in memory.
+	// smaller cache, less API-server load, no other tenants in memory. The
+	// narrowing is SERVER-side — filtering in Go afterwards would save none
+	// of it. WithTweakListOptions (label/field selectors) and WithTransform
+	// (strip fields before they enter the cache) narrow further.
 	factory := informers.NewSharedInformerFactoryWithOptions(cs, 0, informers.WithNamespace(ns))
 	podInformer := factory.Core().V1().Pods()
 	// Touch Informer() BEFORE Start — the factory only starts informers
