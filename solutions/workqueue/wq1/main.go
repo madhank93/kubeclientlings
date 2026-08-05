@@ -25,6 +25,9 @@ func main() {
 	q := workqueue.NewTypedRateLimitingQueue[string](rl)
 	defer q.ShutDown()
 
+	// The queue is a SET: adding the same key ten times before it is processed
+	// yields one delivery. That dedup is why handlers enqueue keys, not work.
+	//
 	// Three failed reconciles of "a": each AddRateLimited bumps its retry count.
 	q.AddRateLimited("a")
 	q.AddRateLimited("a")
@@ -32,7 +35,9 @@ func main() {
 	exkit.AssertEqual("retries tracked after 3 rate-limited adds", q.NumRequeues("a"), 3)
 
 	// The reconcile finally succeeds. Forget wipes the backoff history so the
-	// next failure starts over at the base delay.
+	// next failure starts over at the base delay. Done is the OTHER call —
+	// it releases the in-flight marker from Get and must always be deferred;
+	// a real loop calls both.
 	q.Forget("a")
 	exkit.AssertEqual("retries after Forget", q.NumRequeues("a"), 0)
 
