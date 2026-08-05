@@ -27,7 +27,9 @@ func main() {
 	q := workqueue.NewTyped[string]()
 	defer q.ShutDown()
 
-	// "a" added twice while pending — the queue dedupes it.
+	// "a" added twice while pending — the queue dedupes it. Internally it
+	// keeps three sets: queue (waiting), dirty (should be processed) and
+	// processing (in flight).
 	q.Add("a")
 	q.Add("b")
 	q.Add("a")
