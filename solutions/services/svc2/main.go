@@ -30,15 +30,22 @@ func main() {
 
 	// The endpoint slice controller needs ready pods before it fills slices.
 	exkit.WaitFor(ctx, "2 ready endpoints behind the service", func(ctx context.Context) (bool, error) {
+		// Slices are named web-x7k2p, not "web", so there is nothing to Get.
+		// The constant is "kubernetes.io/service-name" — using it rather than
+		// a typed string is the point: a wrong label is an empty list, not an
+		// error, and spins until the timeout.
 		slices, err := cs.DiscoveryV1().EndpointSlices(ns).List(ctx, metav1.ListOptions{
 			LabelSelector: discoveryv1.LabelServiceName + "=web",
 		})
 		if err != nil {
 			return false, err
 		}
+		// One Service can have several slices (100 endpoints each by default),
+		// hence the nested loop.
 		ready := 0
 		for _, slice := range slices.Items {
 			for _, ep := range slice.Endpoints {
+				// *bool: nil means "unknown", which is not false.
 				if ep.Conditions.Ready != nil && *ep.Conditions.Ready {
 					ready++
 				}
