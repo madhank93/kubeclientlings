@@ -36,6 +36,10 @@ func main() {
 		}
 	}
 
+	// Every pair in the Set is required (logical AND), so adding tier=web
+	// narrows env=prod from three pods to two. The same Selector can also be
+	// evaluated locally with selector.Matches(labels.Set(pod.Labels)) — which
+	// is how informer-backed listers filter without a network call.
 	selector := labels.SelectorFromSet(labels.Set{"env": "prod", "tier": "web"})
 
 	pods, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{

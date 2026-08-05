@@ -31,10 +31,12 @@ func main() {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: "web", Namespace: ns},
 		Spec: corev1.ServiceSpec{
+			// Equality-only and ANDed — Services predate the richer
+			// LabelSelector type, so there is no matchExpressions here.
 			Selector: map[string]string{"app": "web"},
 			Ports: []corev1.ServicePort{{
-				Port:       80,
-				TargetPort: intstr.FromInt32(80),
+				Port:       80,                   // the port the Service exposes
+				TargetPort: intstr.FromInt32(80), // the port on the pods
 			}},
 		},
 	}
@@ -53,6 +55,8 @@ func main() {
 	})
 
 	// The moment of truth: does the service's selector select anything?
+	// labels.Set(...).String() renders the map as the "app=web" query form,
+	// so this re-runs the Service's own selector as a List.
 	selected, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.Set(svc.Spec.Selector).String(),
 	})
