@@ -38,7 +38,11 @@ func main() {
 	})
 	defer broadcaster.Shutdown()
 
+	// The scheme resolves the pod's GroupVersionKind for involvedObject; the
+	// EventSource is the "From" column in `kubectl get events`.
 	recorder := broadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "kubeclientlings"})
+	// Reason is a stable CamelCase token people alert on; message is the human
+	// sentence. Emission is async — hence the poll below.
 	recorder.Event(pod, corev1.EventTypeNormal, "Exercised", "kubeclientlings was here")
 
 	exkit.WaitFor(ctx, "the event to appear in the API", func(ctx context.Context) (bool, error) {

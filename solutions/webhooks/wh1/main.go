@@ -23,8 +23,12 @@ import (
 )
 
 func validate(review *admissionv1.AdmissionReview) *admissionv1.AdmissionResponse {
+	// The apiserver matches responses to requests by UID. Omit this and the
+	// request fails no matter what you decided.
 	resp := &admissionv1.AdmissionResponse{UID: review.Request.UID}
 
+	// Object.Raw is raw JSON — the apiserver can't know your Go types, so you
+	// decode it yourself.
 	var pod corev1.Pod
 	if err := json.Unmarshal(review.Request.Object.Raw, &pod); err != nil {
 		resp.Allowed = false
@@ -39,6 +43,9 @@ func validate(review *admissionv1.AdmissionReview) *admissionv1.AdmissionRespons
 		return resp
 	}
 
+	// Explicit: Allowed is a bool, so its zero value denies. Fail-closed is
+	// the right default for a security control, but it means every allow path
+	// has to say so.
 	resp.Allowed = true
 	return resp
 }

@@ -1,0 +1,5 @@
+[[exercises]]
+name = "stderr1"
+path = "../fixtures/stderr1/main.go"
+mode = "compile"
+hint = ""

@@ -39,7 +39,10 @@ func main() {
 	}
 
 	// The value lives at .data.message — the path is every key from the
-	// top of the object down.
+	// top of the object down. found=false means "nothing there" (normal for
+	// optional fields); err means "something there, wrong type".
+	// Sibling helpers: NestedBool, NestedInt64 (JSON has one numeric type,
+	// so every integer is int64), NestedStringMap, NestedSlice…
 	msg, found, err := unstructured.NestedString(u.Object, "data", "message")
 	if err != nil {
 		exkit.Failf("reading nested field: %v", err)

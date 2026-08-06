@@ -21,10 +21,16 @@ import (
 func main() {
 	ctx := context.Background()
 
+	// Implements the same kubernetes.Interface as the real clientset, over an
+	// in-memory tracker keyed by GVR + namespace + name. It has no validation,
+	// no defaulting, no admission and no controllers — reach for envtest when
+	// you need real apiserver behaviour.
 	cs := fake.NewClientset(
 		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "seeded", Namespace: "demo"}},
 	)
 
+	// Namespace is part of the key: querying "default" would be a plain
+	// NotFound, exactly as against a real server.
 	got, err := cs.CoreV1().Pods("demo").Get(ctx, "seeded", metav1.GetOptions{})
 	if err != nil {
 		exkit.Failf("getting the seeded pod: %v", err)

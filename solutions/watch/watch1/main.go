@@ -21,6 +21,8 @@ func main() {
 	ctx, cancel, cs, ns := exkit.Begin("watch1")
 	defer cancel()
 
+	// Watch opens a long-lived chunked HTTP response. Stop() closes it —
+	// without the defer you leak the connection and its goroutine.
 	watcher, err := cs.CoreV1().Pods(ns).Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		exkit.Failf("starting watch: %v", err)
@@ -50,6 +52,9 @@ func main() {
 			if !ok {
 				exkit.Failf("watch channel closed before both events were seen (added=%v deleted=%v)", sawAdded, sawDeleted)
 			}
+			// EventType is a defined string type, so a hand-written "DELETE"
+			// compiles and silently never matches. The constants are ADDED,
+			// MODIFIED, DELETED, BOOKMARK and ERROR.
 			switch event.Type {
 			case watch.Added:
 				sawAdded = true

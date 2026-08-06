@@ -28,16 +28,23 @@ type WidgetSpec struct {
 }
 
 func main() {
+	// The typed clientset fills TypeMeta in for you; the dynamic client can't,
+	// because it has no idea what a Widget is. Left zero, the omitempty tags
+	// drop apiVersion/kind entirely and the object becomes unroutable.
+	// Real code reads the GVK from a runtime.Scheme rather than hardcoding it.
 	w := Widget{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "kubeclientlings.dev/v1alpha1", Kind: "Widget"},
 		ObjectMeta: metav1.ObjectMeta{Name: "w1"},
 		Spec:       WidgetSpec{Size: 7},
 	}
 
+	// Takes a POINTER (it reflects over an addressable value) and yields a
+	// map of JSON-compatible values only.
 	m, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&w)
 	if err != nil {
 		exkit.Failf("converting Widget to unstructured: %v", err)
 	}
+	// Wrapping the map gives us the GetKind/GetAPIVersion accessors.
 	u := &unstructured.Unstructured{Object: m}
 
 	exkit.AssertEqual("the kind the dynamic client will route on", u.GetKind(), "Widget")

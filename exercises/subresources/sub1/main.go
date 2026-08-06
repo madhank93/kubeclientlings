@@ -39,6 +39,8 @@ func main() {
 		exkit.Failf("creating the deployment: %v", err)
 	}
 
+	// A different URL (.../deployments/web/scale) exposing a different, tiny
+	// type: autoscaling/v1.Scale.
 	scale, err := cs.AppsV1().Deployments(ns).GetScale(ctx, "web", metav1.GetOptions{})
 	if err != nil {
 		exkit.Failf("reading the scale subresource: %v", err)

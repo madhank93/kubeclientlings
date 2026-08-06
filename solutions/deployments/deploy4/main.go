@@ -61,9 +61,14 @@ func main() {
 		if err != nil {
 			return false, err
 		}
+		// Generation bumps on every spec change; the controller copies it into
+		// ObservedGeneration once it has acted. Until then the counters below
+		// describe the PREVIOUS rollout — and usually look complete.
 		if d.Status.ObservedGeneration < d.Generation {
 			return false, nil // status is stale — describes an older spec
 		}
+		// UpdatedReplicas = on the new template. ReadyReplicas = passing the
+		// readiness probe. Status.Replicas would only mean "pods exist".
 		return d.Status.UpdatedReplicas == replicas && d.Status.ReadyReplicas == replicas, nil
 	})
 

@@ -36,12 +36,17 @@ func main() {
 		exkit.Failf("cache never synced")
 	}
 
-	// MetaNamespaceKeyFunc builds the canonical key: "namespace/name".
+	// MetaNamespaceKeyFunc builds the canonical key: "namespace/name" (bare
+	// "name" for cluster-scoped objects). Use it rather than fmt.Sprintf —
+	// it's the same function the store used to index the object, and it's the
+	// string controllers push through workqueues. SplitMetaNamespaceKey
+	// reverses it.
 	key, err := cache.MetaNamespaceKeyFunc(created)
 	if err != nil {
 		exkit.Failf("building cache key: %v", err)
 	}
 
+	// (obj, exists, err): a wrong key is exists=false, NOT an error.
 	obj, exists, err := informer.GetStore().GetByKey(key)
 	if err != nil {
 		exkit.Failf("reading from the store: %v", err)

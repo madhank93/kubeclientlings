@@ -24,6 +24,9 @@ func main() {
 		}
 	}
 
+	// A separate query parameter from LabelSelector. Only indexed fields work
+	// (metadata.name, status.phase, spec.nodeName, …) and only with = / != —
+	// but an unsupported field is a loud 400, not a silent empty list.
 	pods, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
 		FieldSelector: "metadata.name=web-2",
 	})

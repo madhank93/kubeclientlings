@@ -39,22 +39,31 @@ type labeler struct {
 func (r *labeler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.seen.Add(1)
 
-	// The request already carries the object's full namespace/name key.
+	// The request already carries the object's full namespace/name key — the
+	// same string from inf3, already parsed. Note we never look at the EVENT:
+	// read current state, make it correct. That's level-triggered.
 	var cm corev1.ConfigMap
 	if err := r.Get(ctx, req.NamespacedName, &cm); err != nil {
 		if apierrors.IsNotFound(err) {
 			// The object is gone; there is nothing left to reconcile.
+			// Returning the error here would retry forever on an object that
+			// will never exist. client.IgnoreNotFound(err) is the one-liner.
 			return ctrl.Result{}, nil
 		}
 		r.errs.Add(1)
 		return ctrl.Result{}, err
 	}
+	// Already correct: return without writing. Skipping this makes the patch
+	// below trigger an update event, which triggers another reconcile — a
+	// self-sustaining loop.
 	if cm.Labels["reconciled"] == "true" {
 		return ctrl.Result{}, nil
 	}
 
 	// MergeFrom-patch instead of Update: idempotent and immune to the
-	// stale-cache conflict a second event would otherwise cause.
+	// stale-cache conflict a second event would otherwise cause. The DeepCopy
+	// is essential — cm points into the shared cache, and the patch is the
+	// diff between this copy and the mutations below.
 	patch := client.MergeFrom(cm.DeepCopy())
 	if cm.Labels == nil {
 		cm.Labels = map[string]string{}

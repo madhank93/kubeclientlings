@@ -71,6 +71,9 @@ func main() {
 		exkit.Failf("creating CRD: %v", err)
 	}
 
+	// Creating a CRD is asynchronous: the object exists at once, but the
+	// endpoints only answer after the server registers handlers and refreshes
+	// discovery. Established is that signal — skipping this wait is a race.
 	exkit.WaitFor(ctx, "CRD to be Established", func(ctx context.Context) (bool, error) {
 		got, err := apiext.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{})
 		if err != nil {
@@ -85,9 +88,12 @@ func main() {
 	})
 
 	dyn := exkit.MustDynamic()
-	// The CRD above serves exactly one version: v1alpha1.
+	// The CRD above serves exactly one version: v1alpha1. Any other version
+	// 404s indistinguishably from "no such resource".
 	gvr := schema.GroupVersionResource{Group: "kubeclientlings.dev", Version: "v1alpha1", Resource: "widgets"}
 
+	// No generated structs exist for a type invented at runtime, so the object
+	// is a raw map. apiVersion here must agree with the GVR above.
 	widget := &unstructured.Unstructured{Object: map[string]any{
 		"apiVersion": "kubeclientlings.dev/v1alpha1",
 		"kind":       "Widget",

@@ -2,9 +2,12 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
 )
@@ -33,13 +36,14 @@ var (
 	paneStyle     = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1)
 
 	// section header styles (labelled, colored)
-	secDescStyle = lipgloss.NewStyle().Bold(true).Foreground(cBlue)
-	secErrStyle  = lipgloss.NewStyle().Bold(true).Foreground(cRed)
-	secOkStyle   = lipgloss.NewStyle().Bold(true).Foreground(cGreen)
-	secWarnStyle = lipgloss.NewStyle().Bold(true).Foreground(cAmber)
-	secHintStyle = lipgloss.NewStyle().Bold(true).Foreground(cTeal)
-	secOutStyle  = lipgloss.NewStyle().Bold(true).Foreground(cDim)
-	searchStyle  = lipgloss.NewStyle().Bold(true).Foreground(cAmber)
+	secDescStyle  = lipgloss.NewStyle().Bold(true).Foreground(cBlue)
+	secErrStyle   = lipgloss.NewStyle().Bold(true).Foreground(cRed)
+	secOkStyle    = lipgloss.NewStyle().Bold(true).Foreground(cGreen)
+	secWarnStyle  = lipgloss.NewStyle().Bold(true).Foreground(cAmber)
+	secHintStyle  = lipgloss.NewStyle().Bold(true).Foreground(cTeal)
+	secOutStyle   = lipgloss.NewStyle().Bold(true).Foreground(cDim)
+	secLearnStyle = lipgloss.NewStyle().Bold(true).Foreground(cGreen)
+	searchStyle   = lipgloss.NewStyle().Bold(true).Foreground(cAmber)
 )
 
 // topicOf extracts the topic directory from an exercise path.
@@ -134,10 +138,10 @@ func (m Model) welcome() string {
 		"  • Open the highlighted exercise's file and make it compile/pass",
 		"  • Remove the  "+markStyle.Render("// I AM NOT DONE")+"  marker when you think it's done",
 		"  • Save — kubeclientlings auto-runs it; "+titleStyle.Render("tests AND golangci-lint")+" must pass",
-		"  • Press n to move to the next exercise",
+		"  • Press n to move to the next exercise — and x for the walk-through of the one you just solved",
 	)
 
-	keys := dimStyle.Render("Keys   ↑↓/jk move · ⏎ run · esc cancel · e edit · h hint · r reset · n next · q quit")
+	keys := dimStyle.Render("Keys   ↑↓/jk move · ⏎ run · esc cancel · e edit · h hint · x explain · r reset · n next · q quit")
 	cta := markStyle.Render("press any key to start →")
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
@@ -295,6 +299,8 @@ func (m Model) detail() string {
 
 	if m.showHint {
 		parts = append(parts, section(secHintStyle.Render("Hint:"), m.current().Hint))
+		// Notes are appended in refreshOutput so their markdown can be rendered
+		// by glamour without the plain-text width wrap mangling the ANSI.
 		return strings.Join(parts, "\n\n")
 	}
 
@@ -329,13 +335,65 @@ func (m Model) footer() string {
 }
 
 // refreshOutput sets the right-pane viewport content, soft-wrapped to its width
-// so long compiler/test output isn't clipped.
+// so long compiler/test output isn't clipped. The teaching notes are appended
+// last and rendered as markdown (code blocks, bold, inline code) via glamour.
 func (m *Model) refreshOutput() {
 	w := m.output.Width
 	if w < 1 {
 		w = 80
 	}
-	m.output.SetContent(lipgloss.NewStyle().Width(w).Render(m.detail()))
+	body := lipgloss.NewStyle().Width(w).Render(m.detail())
+	if m.showNotes {
+		if md := m.current().Notes(); md != "" {
+			body += "\n\n" + secLearnStyle.Render("Learn:") + "\n" + renderMarkdown(md, w)
+		}
+	}
+	m.output.SetContent(body)
+}
+
+// Markdown renderers are cached per wrap-width and reused. We pick a fixed
+// style (never glamour's WithAutoStyle) so rendering issues no terminal
+// background query at render time — that query can block and spew stray bytes
+// inside the alt-screen. Override with GLAMOUR_STYLE=light if desired.
+var (
+	mdMu        sync.Mutex
+	mdRenderers = map[int]*glamour.TermRenderer{}
+)
+
+func mdStyleName() string {
+	if s := os.Getenv("GLAMOUR_STYLE"); s != "" {
+		return s
+	}
+	return "dark"
+}
+
+// renderMarkdown turns notes.md into styled terminal output, falling back to
+// the raw text if glamour can't render it.
+func renderMarkdown(md string, width int) string {
+	mdMu.Lock()
+	r, ok := mdRenderers[width]
+	if !ok {
+		// glamour adds its own left margin and pads to the wrap width; the
+		// viewport clips (doesn't wrap), so wrap a bit under the pane width.
+		wrap := max(width-2, 20)
+		var err error
+		r, err = glamour.NewTermRenderer(
+			glamour.WithStandardStyle(mdStyleName()),
+			glamour.WithWordWrap(wrap),
+		)
+		if err != nil {
+			mdMu.Unlock()
+			return md
+		}
+		mdRenderers[width] = r
+	}
+	mdMu.Unlock()
+
+	out, err := r.Render(md)
+	if err != nil {
+		return md
+	}
+	return strings.TrimRight(out, "\n")
 }
 
 // windowLines returns at most height lines centered on the focus line.

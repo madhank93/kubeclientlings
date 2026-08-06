@@ -28,11 +28,15 @@ func main() {
 	// Get the live object (it carries the resourceVersion), mutate, Update —
 	// retrying if someone else (the kubelet!) wrote in between.
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		// The Get lives INSIDE the closure: on a 409 the retry re-reads a
+		// fresh resourceVersion. Hoisting it out would retry forever on stale.
 		current, err := cs.CoreV1().Pods(ns).Get(ctx, "hello", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		current.Labels["tier"] = "frontend"
+		// Update is a PUT of the whole object; the server accepts it only if
+		// current.ResourceVersion is still the live one.
 		_, err = cs.CoreV1().Pods(ns).Update(ctx, current, metav1.UpdateOptions{})
 		return err
 	})

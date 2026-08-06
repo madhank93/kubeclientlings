@@ -59,7 +59,8 @@ func main() {
 		exkit.Failf("creating pod: %v", err)
 	}
 
-	// The worker: pop one key, split it, mark the pod reconciled.
+	// The worker: pop one key, split it, mark the pod reconciled. Patching
+	// rather than read-modify-write means no resourceVersion and no 409.
 	key, shutdown := q.Get()
 	if shutdown {
 		exkit.Failf("queue shut down before the worker got a key")

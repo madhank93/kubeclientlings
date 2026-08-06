@@ -33,13 +33,20 @@ func main() {
 	becameLeader := make(chan struct{})
 	elector, err := leaderelection.NewLeaderElector(leaderelection.LeaderElectionConfig{
 		Lock: lock,
-		// The contract: LeaseDuration > RenewDeadline > RetryPeriod.
-		LeaseDuration:   15 * time.Second,
-		RenewDeadline:   10 * time.Second,
-		RetryPeriod:     2 * time.Second,
+		// The contract: LeaseDuration > RenewDeadline > RetryPeriod. The
+		// incumbent must give up renewing BEFORE a challenger is allowed to
+		// claim the seat, or both are briefly active. NewLeaderElector
+		// validates this and refuses to build otherwise.
+		LeaseDuration: 15 * time.Second, // how long the lease stays valid unrenewed
+		RenewDeadline: 10 * time.Second, // how long the leader keeps trying to renew
+		RetryPeriod:   2 * time.Second,  // how often either side retries
+		// Clear the lease on clean shutdown so failover is instant instead of
+		// waiting out a whole LeaseDuration.
 		ReleaseOnCancel: true,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) { close(becameLeader) },
+			// In production this must stop every reconcile loop (usually
+			// klog.Fatal): losing the lease means someone else already leads.
 			OnStoppedLeading: func() {},
 		},
 	})

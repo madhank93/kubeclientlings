@@ -90,4 +90,24 @@ var _ = Describe("Commands", func() {
 			})
 		})
 	})
+	Describe("Verify", func() {
+		When("an exercise passes but writes to stderr", func() {
+			It("returns success", func() {
+				verify := cmd.VerifyCmd("../fixtures/stderr1/info.toml")
+
+				err := verify.Execute()
+
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+		When("an exercise does not compile", func() {
+			It("returns error", func() {
+				verify := cmd.VerifyCmd("../fixtures/error1/info.toml")
+
+				err := verify.Execute()
+
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
 })

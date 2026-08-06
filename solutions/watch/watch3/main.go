@@ -31,6 +31,11 @@ func main() {
 		exkit.Failf("listing pods: %v", err)
 	}
 
+	// RetryWatcher re-invokes this watch func whenever the stream dies,
+	// resuming from the last event it delivered — so the consumer below sees
+	// one uninterrupted channel. It rejects "" and "0" at construction: after
+	// a reconnect neither identifies a point in history, so it can't promise
+	// it hasn't skipped or replayed events.
 	watcher, err := watchtools.NewRetryWatcherWithContext(ctx, list.ResourceVersion, &cache.ListWatch{
 		WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
 			return cs.CoreV1().Pods(ns).Watch(ctx, options)

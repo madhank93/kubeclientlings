@@ -32,6 +32,8 @@ func main() {
 	added := make(chan string, 8)
 	_, err := podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
+			// Handlers run on the informer's own goroutine — enqueue and
+			// return, never block or do I/O here.
 			if pod, ok := obj.(*corev1.Pod); ok {
 				added <- pod.Name
 			}

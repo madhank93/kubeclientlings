@@ -21,7 +21,7 @@ func main() {
 	ctx, cancel, cs, ns := exkit.Begin("pods2")
 	defer cancel()
 
-	// Three web pods, two db pods.
+	// Three web pods, two db pods — the labels are what we'll select on.
 	for i := 1; i <= 3; i++ {
 		pod := exkit.NginxPod(ns, fmt.Sprintf("web-%d", i))
 		pod.Labels = map[string]string{"app": "web"}

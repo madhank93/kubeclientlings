@@ -42,6 +42,8 @@ func main() {
 					Containers: []corev1.Container{{
 						Name:  "web",
 						Image: exkit.Image,
+						// The 5s delay is deliberate: it opens the window where
+						// pods exist but aren't ready yet.
 						ReadinessProbe: &corev1.Probe{
 							InitialDelaySeconds: 5,
 							ProbeHandler: corev1.ProbeHandler{
