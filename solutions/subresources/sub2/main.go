@@ -52,7 +52,10 @@ func main() {
 			Scope: apiextensionsv1.NamespaceScoped,
 			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{{
 				Name: "v1alpha1", Served: true, Storage: true,
-				// Enabling the status subresource is what splits the write paths.
+				// Enabling the status subresource is what splits the write
+				// paths. It also makes metadata.generation increment on spec
+				// changes ONLY, which is what makes the generation vs
+				// observedGeneration check meaningful.
 				Subresources: &apiextensionsv1.CustomResourceSubresources{
 					Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
 				},
@@ -111,6 +114,10 @@ func main() {
 	if err := unstructured.SetNestedField(got.Object, "Ready", "status", "phase"); err != nil {
 		exkit.Failf("setting status.phase: %v", err)
 	}
+	// PUT .../widgets/first/status. The main Update endpoint would drop this
+	// status change silently — 200 OK, field unmoved. Each endpoint ignores
+	// the other's half, which is what keeps a user editing spec and a
+	// controller writing status from clobbering each other.
 	if _, err := dyn.Resource(gvr).Namespace(ns).UpdateStatus(ctx, got, metav1.UpdateOptions{}); err != nil {
 		exkit.Failf("updating status: %v", err)
 	}

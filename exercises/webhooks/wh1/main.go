@@ -25,8 +25,10 @@ import (
 )
 
 func validate(review *admissionv1.AdmissionReview) *admissionv1.AdmissionResponse {
+	// The apiserver matches responses to requests by UID.
 	resp := &admissionv1.AdmissionResponse{UID: review.Request.UID}
 
+	// Object.Raw is raw JSON — decode it yourself.
 	var pod corev1.Pod
 	if err := json.Unmarshal(review.Request.Object.Raw, &pod); err != nil {
 		resp.Allowed = false

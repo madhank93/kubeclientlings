@@ -35,6 +35,11 @@ func main() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "child",
 			Namespace: ns,
+			// APIVersion+Kind say what type, Name says which one, and UID pins
+			// the exact instance — names get reused, UIDs never do, so without
+			// it the GC can't tell "my owner exists" from "my owner was
+			// replaced". Real controllers use controllerutil.SetOwnerReference
+			// rather than building this by hand.
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion: "v1",
 				Kind:       "ConfigMap",

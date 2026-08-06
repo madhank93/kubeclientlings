@@ -20,6 +20,10 @@ func main() {
 	base := 5 * time.Millisecond
 	max := time.Second
 
+	// base·2^failures, clamped at max, counted PER KEY — one wedged object
+	// never slows reconciles of anything else. The FastSlow limiter returns a
+	// flat delay instead; MaxOf composes several. Production default:
+	// workqueue.DefaultTypedControllerRateLimiter().
 	rl := workqueue.NewTypedItemExponentialFailureRateLimiter[string](base, max)
 
 	// Each When call records another failure for "x" and returns the delay the

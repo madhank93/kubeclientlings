@@ -46,11 +46,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// NewForConfig copies the config, so the tuning above only counts if it
+	// happened before this line.
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		fmt.Printf("❌ could not create clientset: %v\n", err)
 		os.Exit(1)
 	}
+	// Discovery() hits /version — the cheapest real round-trip there is, so it
+	// proves the tuned config still talks to the cluster.
 	version, err := clientset.Discovery().ServerVersion()
 	if err != nil {
 		fmt.Printf("❌ round-trip failed: %v\n", err)

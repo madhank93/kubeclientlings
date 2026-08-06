@@ -28,6 +28,7 @@ func main() {
 		}
 	}
 
+	// The 0 is the RESYNC period, not a poll interval — 0 disables it.
 	factory := informers.NewSharedInformerFactoryWithOptions(cs, 0, informers.WithNamespace(ns))
 	podInformer := factory.Core().V1().Pods()
 	lister := podInformer.Lister()

@@ -19,6 +19,9 @@ func main() {
 	ctx, cancel, cs, ns := exkit.Begin("opt3")
 	defer cancel()
 
+	// Apply configurations are generated structs where EVERY field is a
+	// pointer, so "not set" is representable — with a plain corev1.Pod the
+	// zero values would read as a claim of ownership over those fields.
 	pod := corev1apply.Pod("hello", ns).
 		WithLabels(map[string]string{"managed-by": "ssa"}).
 		WithSpec(corev1apply.PodSpec().
@@ -26,6 +29,9 @@ func main() {
 				WithName("web").
 				WithImage(exkit.Image)))
 
+	// Required on Apply (unlike Update, where client-go defaults it): the
+	// server records ownership per field under this name. Keep it stable —
+	// a fresh name per run orphans the fields the old one owned.
 	applied, err := cs.CoreV1().Pods(ns).Apply(ctx, pod, metav1.ApplyOptions{
 		FieldManager: "kubeclientlings",
 	})
@@ -35,6 +41,8 @@ func main() {
 
 	exkit.AssertEqual("label set by apply", applied.Labels["managed-by"], "ssa")
 
+	// metadata.managedFields is the server's per-field ownership ledger — one
+	// entry per manager that has ever written to this object.
 	manager := ""
 	for _, mf := range applied.ManagedFields {
 		if mf.Manager == "kubeclientlings" {

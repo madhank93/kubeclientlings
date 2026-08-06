@@ -27,6 +27,9 @@ func main() {
 		exkit.Failf("getting deployment: %v", err)
 	}
 
+	// int32, not int: the field is *int32 and Go won't convert implicitly.
+	// It's a pointer so "unset" (nil, default 1) and "explicitly zero" stay
+	// distinguishable. k8s.io/utils/ptr.To[int32](3) is the tidy shorthand.
 	replicas := int32(3)
 	dep.Spec.Replicas = &replicas
 

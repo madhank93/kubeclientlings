@@ -23,6 +23,8 @@ import (
 func main() {
 	ctx := context.Background()
 
+	// Same kubernetes.Interface as the real clientset, backed by an in-memory
+	// tracker keyed by GVR + namespace + name.
 	cs := fake.NewClientset(
 		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "seeded", Namespace: "demo"}},
 	)

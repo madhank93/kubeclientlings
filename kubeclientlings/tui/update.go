@@ -159,6 +159,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.refreshOutput()
 		return m, nil
 
+	case key.Matches(msg, m.keys.Explain):
+		m.showNotes = !m.showNotes
+		m.refreshOutput()
+		if m.showNotes {
+			m.output.GotoBottom() // bring the Learn section into view
+		}
+		return m, nil
+
 	case key.Matches(msg, m.keys.Reset):
 		cur := m.current()
 		if err := exercises.Reset(cur); err != nil {
@@ -258,13 +266,23 @@ func (m Model) handleVerified(msg verifiedMsg) (tea.Model, tea.Cmd) {
 		m.refreshHeaderCounts()
 	}
 
+	// Whenever the exercise passes — first time or on a re-run — surface the
+	// teaching walk-through automatically (if the exercise has one).
+	if msg.status == exercises.StatusDone && m.current().Notes() != "" {
+		m.showNotes = true
+	}
+
 	m.refreshOutput()
+	if m.showNotes {
+		m.output.GotoBottom() // put the Learn section on screen after a pass
+	}
 	return m, nil
 }
 
 // onSelectionChange resets per-exercise detail state when the cursor moves.
 func (m *Model) onSelectionChange() {
 	m.showHint = false
+	m.showNotes = false
 	m.hasResult = false
 	m.notice = ""
 	m.result = exercises.Result{}

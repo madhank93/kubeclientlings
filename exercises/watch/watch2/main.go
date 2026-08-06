@@ -68,6 +68,8 @@ func main() {
 			if event.Type != watch.Added {
 				continue // status updates on the new pod are fine
 			}
+			// event.Object is a runtime.Object. Always use the two-value
+			// assertion: a watch.Error event carries a *metav1.Status.
 			pod, ok := event.Object.(*corev1.Pod)
 			if !ok {
 				exkit.Failf("unexpected object type %T on the watch channel", event.Object)

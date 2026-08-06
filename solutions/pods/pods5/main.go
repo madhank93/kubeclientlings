@@ -26,6 +26,8 @@ func main() {
 		exkit.Failf("creating pod: %v", err)
 	}
 
+	// Delete only STARTS the deletion: it stamps deletionTimestamp and
+	// returns while finalizers and the kubelet do the real work.
 	if err := cs.CoreV1().Pods(ns).Delete(ctx, "doomed", metav1.DeleteOptions{}); err != nil {
 		exkit.Failf("deleting pod: %v", err)
 	}

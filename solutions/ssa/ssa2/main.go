@@ -25,8 +25,12 @@ func main() {
 		exkit.Failf("mgr-a applying: %v", err)
 	}
 
-	// mgr-b wants the same field. Without Force this conflicts; with Force it
-	// steals ownership.
+	// mgr-b wants the same field with a DIFFERENT value. Without Force the
+	// server returns 409 naming the contested fields and their holder — that
+	// refusal is the feature. Force takes both the value and the ownership;
+	// mgr-a would now conflict on its next apply. (Applying the SAME value
+	// isn't a conflict at all — it becomes co-ownership.) Controllers force;
+	// interactive tools should surface the conflict to a human instead.
 	applyB := applyconfigcorev1.ConfigMap("shared", ns).WithData(map[string]string{"owner": "from-b"})
 	if _, err := cs.CoreV1().ConfigMaps(ns).Apply(ctx, applyB, metav1.ApplyOptions{FieldManager: "mgr-b", Force: true}); err != nil {
 		exkit.Failf("mgr-b applying with force: %v", err)

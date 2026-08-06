@@ -4,6 +4,7 @@ KEYS
   ↵            run the current exercise
   e            open it in $EDITOR, then re-run on exit
   h            hint
+  x            explain — the teaching walk-through for this exercise
   r            reset the exercise to its starting state
   n            jump to the next unsolved exercise
   /            search        esc  clear
@@ -17,6 +18,12 @@ WHILE A RUN IS GOING
   with your code, so watch the seconds rather than the spinner.
 
   esc cancels the run without killing the terminal.
+
+LEARN SECTION
+
+  When an exercise passes, a "Learn:" walk-through appears under the output —
+  the fixed code, why it works, the detail that bites people, and links to the
+  client-go docs. Press x any time to show or hide it.
 
 SAVING A FILE RE-RUNS IT
 

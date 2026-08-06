@@ -29,7 +29,12 @@ func main() {
 			q.AddRateLimited(key)
 			return
 		}
-		// Out of retries: give up on this key and clear its history.
+		// Out of retries: give up on this key and clear its history. Forget
+		// still matters — leaving the counter high means a later, unrelated
+		// failure resumes at maximum backoff. Dropping is safe because
+		// controllers are level-triggered: a future change re-enqueues the
+		// key with a clean counter. Log or emit a Warning Event here so the
+		// give-up is visible to a human.
 		q.Forget(key)
 	}
 

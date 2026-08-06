@@ -22,6 +22,9 @@ func main() {
 	ctx, cancel, cs, ns := exkit.Begin("fin1")
 	defer cancel()
 
+	// The API server never interprets these strings — it only counts them:
+	// a non-empty list means "do not remove this object". Namespace your own
+	// (yourdomain.com/name); the kubernetes.io prefix is reserved.
 	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
 		Name:       "guarded",
 		Namespace:  ns,
@@ -44,7 +47,10 @@ func main() {
 	}
 	exkit.AssertTrue("delete only marked it terminating, not gone", got.DeletionTimestamp != nil)
 
-	// Release it so the namespace can be torn down next run.
+	// Release it so the namespace can be torn down next run. Hand-editing the
+	// finalizer list like this is also the ONLY escape for an object stuck
+	// terminating because its owning controller is gone — neither --force nor
+	// --grace-period=0 will do it.
 	got.Finalizers = nil
 	if _, err := cs.CoreV1().ConfigMaps(ns).Update(ctx, got, metav1.UpdateOptions{}); err != nil {
 		exkit.Failf("clearing the finalizer: %v", err)

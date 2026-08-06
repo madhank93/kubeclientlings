@@ -19,9 +19,17 @@ func main() {
 	ctx, cancel, cs, ns := exkit.Begin("ssa1")
 	defer cancel()
 
+	// Apply configurations use pointer fields throughout, so "unset" and
+	// "zero" stay distinguishable — a plain corev1.ConfigMap full of Go zero
+	// values would claim ownership of every field in the type.
 	apply := applyconfigcorev1.ConfigMap("settings", ns).
 		WithData(map[string]string{"replicas": "3"})
 
+	// One call: no Get, no resourceVersion, no 409 retry loop. FieldManager is
+	// mandatory — it's the name ownership is recorded under in
+	// metadata.managedFields. Keep it stable across restarts. Note that apply
+	// also REMOVES: omit a field you previously owned and the server deletes
+	// it, so always send the complete set you intend to own.
 	_, err := cs.CoreV1().ConfigMaps(ns).Apply(ctx, apply, metav1.ApplyOptions{FieldManager: "kubeclientlings"})
 	if err != nil {
 		exkit.Failf("applying the configmap: %v", err)

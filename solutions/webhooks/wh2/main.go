@@ -20,12 +20,18 @@ import (
 func mutate(review *admissionv1.AdmissionReview) *admissionv1.AdmissionResponse {
 	resp := &admissionv1.AdmissionResponse{UID: review.Request.UID, Allowed: true}
 
+	// RFC 6902 JSON Patch: an ARRAY of {op, path, value}, not the
+	// object-shaped merge patch from pods4. Note this "add" on
+	// /metadata/labels replaces the whole map — target
+	// /metadata/labels/injected to add one key, but only when the map
+	// already exists (JSON Patch won't create intermediate objects).
 	patch := []map[string]any{
 		{"op": "add", "path": "/metadata/labels", "value": map[string]string{"injected": "true"}},
 	}
 	resp.Patch, _ = json.Marshal(patch)
 
-	// Without this, the apiserver drops the patch silently.
+	// Without this, the apiserver drops the patch silently — no error, no
+	// mutation. It's a *PatchType, hence the variable (or ptr.To(...)).
 	pt := admissionv1.PatchTypeJSONPatch
 	resp.PatchType = &pt
 

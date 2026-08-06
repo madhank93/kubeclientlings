@@ -19,11 +19,15 @@ func main() {
 
 	pod := exkit.NginxPod(ns, "hello")
 
+	// CoreV1() picks the group/version, Pods(ns) the resource and namespace:
+	// together they build POST /api/v1/namespaces/<ns>/pods.
 	_, err := cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		exkit.Failf("creating pod: %v", err)
 	}
 
+	// Reading it back returns the SERVER's copy — uid, resourceVersion and
+	// every defaulted spec field filled in, unlike the object we sent.
 	got, err := cs.CoreV1().Pods(ns).Get(ctx, "hello", metav1.GetOptions{})
 	if err != nil {
 		exkit.Failf("getting pod back: %v", err)

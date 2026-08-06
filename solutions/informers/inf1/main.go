@@ -27,10 +27,14 @@ func main() {
 		}
 	}
 
+	// The 0 is the RESYNC period, not a poll interval: it re-delivers cached
+	// objects as synthetic Updates, it never re-fetches. 0 disables it.
 	factory := informers.NewSharedInformerFactoryWithOptions(cs, 0, informers.WithNamespace(ns))
 	podInformer := factory.Core().V1().Pods()
 	lister := podInformer.Lister()
 
+	// Spawns the List+Watch goroutines and returns at once — the store is
+	// still empty on the next line.
 	factory.Start(ctx.Done())
 
 	// Block until the informer's initial List has landed in the cache.
@@ -39,6 +43,8 @@ func main() {
 		exkit.Failf("cache never synced")
 	}
 
+	// Served from local memory — no HTTP. The objects are pointers INTO the
+	// shared cache: DeepCopy before mutating anything you get here.
 	pods, err := lister.Pods(ns).List(labels.Everything())
 	if err != nil {
 		exkit.Failf("listing from the cache: %v", err)

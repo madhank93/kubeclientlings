@@ -35,6 +35,7 @@ func main() {
 		exkit.Failf("creating configmap: %v", err)
 	}
 
+	// Every call is recorded in order — reads included.
 	actions := cs.Actions()
 	exkit.AssertEqual("actions the fake recorded", len(actions), 1)
 
