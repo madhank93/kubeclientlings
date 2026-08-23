@@ -24,6 +24,23 @@ if !cache.WaitForCacheSync(ctx.Done(), podInformer.Informer().HasSynced) {
 - Handlers must be registered **before** `Start`, or you may miss the initial
   batch. Ordering matters here in a way it usually doesn't.
 
+**Under the hood**
+
+- Each registered handler gets a `processorListener` with its own ring buffer
+  and delivery goroutine. `sharedProcessor.distribute` fans one delta out to
+  every listener, so a slow handler grows *its own* buffer rather than blocking
+  the informer — until the buffer's growth becomes the memory leak instead.
+- `AddEventHandler` returns a `ResourceEventHandlerRegistration` whose
+  `HasSynced` tracks that listener specifically, which is what you want in
+  `WaitForCacheSync` when handlers were added after start-up.
+
+**Common mistake**
+
+- Doing the work in the handler. Even a fast API call serialises every
+  subsequent delta for that listener, so one slow reconcile turns into
+  ever-growing delivery lag across the whole informer. Compute a key, enqueue
+  it, return.
+
 **Key detail:** during the initial sync, every pre-existing object is delivered
 to `AddFunc` — the informer doesn't distinguish "this already existed" from
 "this was just created". Your handler must therefore be **idempotent**. This is
@@ -43,6 +60,9 @@ Two more things the handler contract requires:
 Handlers run on the informer's own goroutine, serialised per listener. Blocking
 in one blocks that informer's delivery to that listener — never do I/O in a
 handler. Enqueue and return; the `workqueue` topic is the other half of this.
+
+**See also:** inf3 (the key to enqueue) · wq1 (the queue on the other end) · ctrl2 (the
+whole pipeline assembled) · the [informers chapter](../README.md)
 
 **References**
 

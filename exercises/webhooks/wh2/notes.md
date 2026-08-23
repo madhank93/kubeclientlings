@@ -27,6 +27,21 @@ resp.PatchType = &pt
   object-shaped merge patch from pods4. Wrong shape here is a decode error on
   the server side.
 
+**Under the hood**
+
+- The apiserver applies `response.patch` to the incoming object with
+  `jsonpatch.DecodePatch(...).Apply(...)` — but only after checking
+  `response.patchType`. A nil type short-circuits that whole branch, so the
+  bytes are never decoded and never reported on.
+- After each mutating webhook the object is re-serialised for the next one,
+  which is why mutations must be idempotent under `reinvocationPolicy`.
+
+**Common mistake**
+
+- Marshalling a correct JSON Patch and forgetting `resp.PatchType`. The webhook
+  returns 200, the admission chain continues, and the object is stored
+  unmodified — the handler looks like it works and does nothing at all.
+
 **Key detail:** `{"op": "add", "path": "/metadata/labels", ...}` **replaces**
 the whole labels map if one already exists. To add a single label without
 clobbering the others, target the key:
@@ -46,6 +61,9 @@ mutations complete before any validation — so you can mutate and then validate
 the result in the same admission pass. They must be idempotent, because the
 server may re-invoke them (up to `reinvocationPolicy`) after other webhooks
 mutate the same object.
+
+**See also:** wh1 (the validating half, and the same zero-value trap) · pods4 (the patch
+types, including this one) · the [webhooks chapter](../README.md)
 
 **References**
 

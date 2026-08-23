@@ -22,6 +22,22 @@ slices, err := cs.DiscoveryV1().EndpointSlices(ns).List(ctx, metav1.ListOptions{
 - `ep.Conditions.Ready` is a `*bool`, so it needs the nil check before the
   dereference: `nil` means "unknown", which is not the same as `false`.
 
+**Under the hood**
+
+- The endpointslice controller creates slices with `generateName`, so the name
+  is server-assigned and unpredictable. `kubernetes.io/service-name` is written
+  as a label at creation and is the only stable handle back to the Service.
+- Slices are also partitioned by `addressType` (`IPv4`, `IPv6`, `FQDN`) and by
+  port set, so a dual-stack Service has at least two slices regardless of how
+  few endpoints it has.
+
+**Common mistake**
+
+- Reading `slices.Items[0]` and stopping. One Service routinely has several
+  slices, and which one holds a given pod is an implementation detail — iterate
+  all of them, or you will miss backends on exactly the busy services where it
+  matters.
+
 **Key detail:** the old `v1.Endpoints` API (a single object named exactly after
 the Service) is **deprecated as of Kubernetes 1.33** — the API server now emits
 warnings when you read or write Endpoints. It doesn't scale (every pod change
@@ -37,6 +53,10 @@ Endpoints only appear once pods are **ready**, so a wait loop here is not
 optional. `Conditions` also carries `Serving` and `Terminating`, which let you
 distinguish "still draining connections" from "gone" — the basis of graceful
 shutdown.
+
+**See also:** svc1 (the selector that fills these slices) · deploy4 (readiness, which
+gates what appears here) · opt2 (field selectors, the other way to narrow a
+list) · the [services chapter](../README.md)
 
 **References**
 

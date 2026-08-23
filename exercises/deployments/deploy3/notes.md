@@ -18,6 +18,25 @@ _, err := cs.AppsV1().Deployments(ns).Patch(ctx, "web", types.StrategicMergePatc
 - Include `"name":"web"` and the server updates that one container's image.
   Omit it and there is nothing to match on, so the patch is rejected.
 
+**Under the hood**
+
+- The apiserver looks up the patch-merge metadata by reflecting over the
+  built-in Go type's struct tags, then runs
+  `strategicpatch.StrategicMergePatch` to produce the merged object. Lists tagged
+  `patchStrategy:"merge"` are keyed by their `patchMergeKey`; untagged lists fall
+  back to wholesale replacement.
+- Changing `spec.template` changes its hash, so the Deployment controller
+  creates a new ReplicaSet and scales the old one down according to
+  `spec.strategy` — the rolling update is a consequence of the patch, not a
+  separate call.
+
+**Common mistake**
+
+- Omitting `"name"` from the container entry. Without the merge key there is
+  nothing to match on, so the patch is rejected — and the reflex fix, switching
+  to `MergePatchType`, silently *replaces* the whole containers list with the
+  single stub you sent.
+
 **Key detail:** merge keys are a property of the **built-in Go types**, which
 is why strategic merge patch does not work on CRDs — a
 `CustomResourceDefinition` has no `patchStrategy` tags for the server to read.
@@ -30,6 +49,10 @@ the `ssa` topic.
 Patching `spec.template` changes the pod template hash, which is precisely what
 triggers a new ReplicaSet and a rolling update — this patch *is* "deploy a new
 version".
+
+**See also:** pods4 (patch types, in general) · ssa1 (the merge that works on CRDs too) ·
+deploy4 (waiting for the rollout this triggers) · the
+[deployments chapter](../README.md)
 
 **References**
 

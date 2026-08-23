@@ -22,6 +22,21 @@ cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
   Without it, the object disappears the instant the user hits delete and the
   controller never learns what it was supposed to clean up.
 
+**Under the hood**
+
+- `rest.BeforeDelete` checks `len(finalizers) > 0`; if so it converts the DELETE
+  into an update that sets `deletionTimestamp` and
+  `deletionGracePeriodSeconds`, and returns `graceful=true`. Only the empty-list
+  path reaches the actual etcd delete.
+- Finalizer names are validated as qualified names, which is why a bare string
+  is rejected on many resources and why the `kubernetes.io` prefix is reserved.
+
+**Common mistake**
+
+- Adding the finalizer *after* allocating the external resource. A delete
+  arriving in that window removes the object immediately, and the only record of
+  what to clean up goes with it.
+
 **Key detail:** finalizers are the reason objects get "stuck terminating"
 forever, and it is one of the most common Kubernetes support questions. If the
 controller that owns a finalizer is uninstalled, crashed, or never existed,
@@ -41,6 +56,10 @@ Conventions worth following:
 - Adding a finalizer is a normal metadata write, so it competes with other
   writers — `controllerutil.AddFinalizer` + `Update` inside a
   `retry.RetryOnConflict` is the safe form.
+
+**See also:** fin2 (removing it, and completing the delete) · pods5 (why a delete may not
+delete) · opt4 (`BlockOwnerDeletion`, the other deletion-ordering knob) · the
+[finalizers chapter](../README.md)
 
 **References**
 

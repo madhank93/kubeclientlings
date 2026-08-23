@@ -20,6 +20,21 @@ msg, found, err := unstructured.NestedString(u.Object, "data", "message")
   the full path. Getting this wrong yields `found=false`, which is why you must
   actually check it rather than using the value.
 
+**Under the hood**
+
+- `NestedFieldNoCopy` walks the path with a type switch at each step, returning
+  `found=false` the moment a key is absent and an error the moment a value is
+  the wrong shape. Every other `Nested*` helper is that plus one type assertion
+  on the leaf.
+- The deep copy in `NestedMap` / `NestedSlice` is `runtime.DeepCopyJSON`, which
+  is why it only accepts JSON-compatible values and panics on anything else.
+
+**Common mistake**
+
+- Asking for `NestedInt64` and then storing the result in an `int` field, or
+  worse, reaching for a `NestedInt` that does not exist. JSON has one numeric
+  type; everything numeric in an unstructured object is `int64` or `float64`.
+
 **Key detail:** the family is `NestedString`, `NestedBool`, `NestedInt64`,
 `NestedFloat64`, `NestedStringMap`, `NestedStringSlice`, `NestedSlice`,
 `NestedMap` and `NestedFieldNoCopy`. Note the **Int64** — JSON has one numeric
@@ -34,6 +49,10 @@ when you only need to read and the cost matters.
 Writing back is `unstructured.SetNestedField(u.Object, value, "spec", "size")`,
 and it will error unless the value is a JSON-compatible type (`string`, `bool`,
 `int64`, `float64`, `map[string]any`, `[]any`).
+
+**See also:** dyn1 (where the map comes from) · crd1 (converting the map to a struct
+instead) · inf1 (why the deep copy matters when the object came from a cache) ·
+the [dynamic chapter](../README.md)
 
 **References**
 

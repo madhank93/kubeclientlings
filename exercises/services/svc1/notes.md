@@ -17,6 +17,21 @@ Selector: map[string]string{"app": "web"}, // must match the pods' labels
   `"app=web"` query string form, which is how the exercise re-runs the
   Service's own selector as a `List` and proves it selects something.
 
+**Under the hood**
+
+- `Service.spec.selector` is `map[string]string` in the API type, so the
+  endpoints controller converts it with `labels.Set(...).AsSelectorPreValidated()`
+  and evaluates it against its pod informer — there is no server-side join, just
+  a controller watching pods and writing slices.
+- Only pods that are *ready* (and not terminating) contribute addresses, which
+  is why an endpoint set can be empty for tens of seconds after the pods exist.
+
+**Common mistake**
+
+- Treating a successful `Create` as proof the Service works. Nothing validates
+  the selector against anything, so a typo produces a Service with a ClusterIP,
+  working DNS, and no backends — connections just fail to connect.
+
 **Key detail:** nothing validates this at admission. A Service whose selector
 matches zero pods is a completely legal object — it gets a ClusterIP, DNS
 resolves, and connections just fail to connect. That silence is what makes it
@@ -32,6 +47,10 @@ Two adjacent facts worth knowing:
 - The selector matches pods, not Deployments. Two Deployments whose pods share
   a label are both behind the Service — which is the mechanism behind blue/green
   and canary routing.
+
+**See also:** svc2 (reading the endpoints this selector produced) · deploy1 (the labels it
+has to match) · opt1 (building selectors properly) · the
+[services chapter](../README.md)
 
 **References**
 

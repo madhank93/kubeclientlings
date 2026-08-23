@@ -27,6 +27,23 @@ for {
   `len(list.Items) < limit` — a page can legitimately come back short.
 - The token is opaque. Never parse, construct or persist one across processes.
 
+**Under the hood**
+
+- The continue token is a base64-encoded protobuf holding the etcd revision the
+  first page was served at plus the last key returned. The server resumes the
+  range read from that key at that revision, which is what makes the pages one
+  consistent snapshot.
+- Because it pins a revision, paging keeps that etcd revision alive against
+  compaction — a slow loop across a large collection is the one case where
+  paging costs the server more than a single list.
+
+**Common mistake**
+
+- Terminating on `len(list.Items) < limit`. The server may return a short page
+  for reasons of its own — filtered items, size limits — so the loop exits early
+  and you silently process a prefix of the collection. Only an empty
+  `list.Continue` means the end.
+
 **Key detail:** paging is not a snapshot in the way a single `List` is, but it
 is not incoherent either. All pages are served at the resourceVersion pinned by
 the *first* request, so you get a consistent view — at the price that the
@@ -49,6 +66,10 @@ When you only need names or labels — a common case for a garbage-collector
 style loop — pair paging with a **metadata-only** client
 (`k8s.io/client-go/metadata`), which requests `PartialObjectMetadata` and drops
 spec/status on the wire entirely.
+
+**See also:** pods2 (the unbounded list this bounds) · inf1 (informers, which chunk their
+initial list for you) · setup3 (the other half of not overloading the
+apiserver) · the [options chapter](../README.md)
 
 **References**
 

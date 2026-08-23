@@ -25,6 +25,24 @@ _, err := cs.CoreV1().Pods(ns).Patch(ctx, "hello", types.StrategicMergePatchType
   `JSONPatchType` over an object-shaped body makes the server fail to decode it
   — the mismatch is a 4xx, not a silent no-op.
 
+**Under the hood**
+
+- The patch type becomes the request's `Content-Type`
+  (`application/strategic-merge-patch+json`, `application/merge-patch+json`,
+  `application/json-patch+json`, `application/apply-patch+yaml`), and the
+  apiserver dispatches on that header alone.
+- For a strategic merge the server loads the built-in Go type's struct tags,
+  applies the merge against the stored object and writes the result in one
+  transaction — so there is no window for another writer, which is what removes
+  the need for a `resourceVersion`.
+
+**Common mistake**
+
+- Declaring `JSONPatchType` over an object-shaped body (or the reverse). The
+  server tries to decode an array and finds an object, so you get a 4xx that
+  talks about decoding rather than about patch types — the header and the bytes
+  have to agree.
+
 **Key detail:** merging is why the `app` label survives. A strategic merge
 patch touches only the keys you named; `metadata.labels` is a map, so `tier` is
 added and `app` is left alone. Compare with the pods3 bug, where a PUT of a
@@ -32,6 +50,10 @@ partial object wipes everything you omitted.
 
 To *delete* a key with a merge patch, set it to `null`:
 `{"metadata":{"labels":{"tier":null}}}`.
+
+**See also:** pods3 (the read-modify-write this replaces) · deploy3 (merge keys, when the
+patch touches a list) · ssa1 (apply, the type that also tracks ownership) · the
+[pods chapter](../README.md)
 
 **References**
 

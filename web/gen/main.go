@@ -1,6 +1,6 @@
-// Command gen renders the KubeClientlings catalog data (catalog.ts and
-// per-exercise detail markdown) from info.toml + exercise sources + per-topic
-// READMEs. Run from the repo root: `go run ./web/gen`.
+// Command gen renders the KubeClientlings catalog data (catalog.ts, per-exercise
+// detail markdown, and per-topic chapters) from info.toml + exercise sources +
+// per-topic READMEs. Run from the repo root: `go run ./web/gen`.
 package main
 
 import (
@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	infoFile   = "info.toml"
-	dataDir    = "web/src/data"                // catalog.ts for /catalog
-	detailsDir = "web/src/data/lesson-details" // per-exercise detail markdown
-	exerciseR  = "exercises"
+	infoFile    = "info.toml"
+	dataDir     = "web/src/data"                // catalog.ts for /catalog
+	detailsDir  = "web/src/data/lesson-details" // per-exercise detail markdown
+	chaptersDir = "web/src/data/chapters"       // per-topic chapter markdown for the catalog
+	exerciseR   = "exercises"
 	// landingPage states the exercise count in prose, so it can drift.
 	landingPage = "web/src/content/docs/index.mdx"
 	// Popups link to the worked solution instead of embedding it.
@@ -84,8 +85,65 @@ func run() error {
 	if err := checkLandingCount(len(exs)); err != nil {
 		return err
 	}
-	return writeCatalog(byTopic)
+	if err := writeCatalog(byTopic); err != nil {
+		return err
+	}
+	return writeChapters()
 }
+
+// writeChapters renders each topic README as chapter markdown for the catalog
+// modal. The README stays the single source: the TUI and GitHub read it
+// directly, the site reads this rendering of it.
+func writeChapters() error {
+	if err := os.RemoveAll(chaptersDir); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(chaptersDir, 0o755); err != nil {
+		return err
+	}
+
+	for _, ti := range tiers {
+		for _, topic := range ti.topics {
+			body := readme(topic)
+			if body == "" {
+				continue
+			}
+			var b strings.Builder
+			fmt.Fprintf(&b, "---\ntitle: %s\n---\n\n", pretty(topic))
+			fmt.Fprintf(&b, "%s\n", chapterHTML(exercises.StripFences(body, "ascii")))
+			if err := os.WriteFile(filepath.Join(chaptersDir, topic+".md"), []byte(b.String()), 0o644); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// chapterHTML prepares a chapter for the catalog modal: neighbour links become
+// catalog deep links, and mermaid fences become the <pre class="mermaid"> the
+// modal's lazy mermaid pass renders (a fence would stay a code block, since the
+// modal injects its HTML after the page has loaded).
+func chapterHTML(md string) string {
+	md = topicLink.ReplaceAllString(md, "](/catalog/?chapter=$1)")
+	return mermaidFence.ReplaceAllStringFunc(md, func(block string) string {
+		src := mermaidFence.FindStringSubmatch(block)[1]
+		return "<pre class=\"mermaid\">" + escapeHTML(strings.TrimRight(src, "\n")) + "</pre>"
+	})
+}
+
+// escapeHTML escapes the three characters that would otherwise end the <pre>
+// early or be read as markup. Mermaid parses the element's text content, so it
+// sees the original characters back.
+func escapeHTML(s string) string {
+	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(s)
+}
+
+// Link rewrites applied to chapters and notes on their way to the catalog.
+var (
+	topicLink    = regexp.MustCompile(`\]\(\.\./([a-z_]+)/\)`)
+	readmeLink   = regexp.MustCompile(`\]\(\.\./README\.md\)`)
+	mermaidFence = regexp.MustCompile("(?s)```mermaid\n(.*?)```")
+)
 
 // countRE matches the landing page's prose count, e.g. "56 exercises" and
 // "56 small exercises".
@@ -232,7 +290,11 @@ func notesBody(e exercises.Exercise) string {
 	if strings.HasPrefix(lines[0], "#") {
 		lines = lines[1:]
 	}
-	return strings.TrimSpace(strings.Join(lines, "\n"))
+	out := strings.TrimSpace(strings.Join(lines, "\n"))
+	// The note's chapter backlink is a relative path on GitHub and in the TUI;
+	// on the site the chapter is a catalog deep link.
+	out = readmeLink.ReplaceAllString(out, "](/catalog/?chapter="+topicOf(e.Path)+")")
+	return exercises.StripFences(out, "ascii")
 }
 
 // js renders s as a JavaScript string literal.
@@ -243,16 +305,17 @@ func js(s string) string {
 
 var mdLink = regexp.MustCompile(`\[([^\]]+)\]\([^)]+\)`)
 
-// learnText returns the topic README as popover-ready plain text: headings and
-// link lists dropped, inline links unwrapped, paragraphs kept as blank-line
-// breaks.
+// learnText returns the topic's opening prose as popover-ready plain text:
+// headings and link lists dropped, inline links unwrapped, paragraphs kept as
+// blank-line breaks. Only the intro — the rest of the chapter opens in the
+// modal, and a whole chapter would not fit a popover.
 func learnText(topic string) string {
-	intro := readme(topic)
-	if intro == "" {
+	body := intro(readme(topic))
+	if body == "" {
 		return ""
 	}
 	var paras []string
-	for para := range strings.SplitSeq(intro, "\n\n") {
+	for para := range strings.SplitSeq(body, "\n\n") {
 		para = strings.TrimSpace(para)
 		if para == "" || strings.HasPrefix(para, "#") || strings.HasPrefix(para, "-") {
 			continue
@@ -261,6 +324,15 @@ func learnText(topic string) string {
 		paras = append(paras, mdLink.ReplaceAllString(para, "$1"))
 	}
 	return strings.Join(paras, "\n\n")
+}
+
+// intro returns a chapter's opening prose: everything before its first section
+// heading. It has to stand on its own — the catalog popover shows only this.
+func intro(body string) string {
+	if i := strings.Index(body, "\n## "); i >= 0 {
+		body = body[:i]
+	}
+	return strings.TrimSpace(body)
 }
 
 // readme returns the topic README with its leading H1 stripped (the popover

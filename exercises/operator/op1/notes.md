@@ -25,6 +25,21 @@ if err := r.Get(ctx, req.NamespacedName, &cm); err != nil {
   - `{RequeueAfter: d}, nil` — come back in `d` regardless. For polling
     external state.
 
+**Under the hood**
+
+- The manager builds a cache-backed `client.Client`: reads go to an informer
+  cache keyed by GVK, writes go straight to the apiserver. `req.NamespacedName`
+  is the same `namespace/name` the workqueue carried, already split.
+- The returned `ctrl.Result` is fed back into the controller's rate limiter — an
+  error requeues with exponential backoff, `RequeueAfter` schedules an
+  `AddAfter`, and a zero result forgets the key.
+
+**Common mistake**
+
+- Returning the `IsNotFound` error instead of swallowing it. The manager
+  requeues an object that will never exist, so the controller spins at backoff
+  rate forever with nothing visible but a climbing error counter.
+
 **Key detail:** `IsNotFound` is a **success**, not an error. The object was
 deleted; the cache already forgot it; there is nothing to reconcile. Returning
 the error instead makes the manager retry forever on an object that will never
@@ -45,6 +60,10 @@ Two supporting details in this code:
 - The early return when the label is already set makes the reconcile a **no-op**
   when nothing needs doing. Without it, the patch triggers an update event which
   triggers another reconcile — a self-sustaining loop.
+
+**See also:** op2 (wiring child objects into the same reconcile) · op3 (converging rather
+than reacting) · ctrl2 (the same loop, hand-wired) · pods5 (`IsNotFound` as a
+success signal) · the [operator chapter](../README.md)
 
 **References**
 

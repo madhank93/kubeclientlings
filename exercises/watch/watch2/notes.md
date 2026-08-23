@@ -24,6 +24,22 @@ watcher, err := cs.CoreV1().Pods(ns).Watch(ctx, metav1.ListOptions{
 - This exercise asserts the first `Added` is `new-pod`, which is only true for
   the third option.
 
+**Under the hood**
+
+- `list.metadata.resourceVersion` is the etcd revision the snapshot was read at.
+  Passing it to a watch makes the apiserver replay its watch cache from that
+  revision forward, so the first event you receive is the next change after the
+  snapshot.
+- `ResourceVersion: "0"` is served entirely from the watch cache and is
+  therefore cheap for the server but arbitrarily stale — it means "any version
+  you have", not "the latest".
+
+**Common mistake**
+
+- `List` followed by `Watch` with empty options, on the assumption they are
+  continuous. They are not: the watch starts at *now*, so anything that changed
+  between the two calls is lost, and nothing anywhere reports the gap.
+
 **Key detail:** resourceVersions are **opaque**. They are strings that happen
 to look like integers today; you must never parse, compare or increment them.
 The only valid operations are "pass it back to the server" and "compare for
@@ -41,6 +57,10 @@ changed across releases. Code against the **error** instead: on `410`, List
 again and restart from the new version. That recovery loop is precisely what
 `Reflector` implements inside every informer, and it is the honest reason
 "just use an informer" is the standard advice for anything long-lived.
+
+**See also:** watch1 (the event stream itself) · watch3 (keeping this handoff correct
+across reconnects) · inf1 (list-then-watch, implemented and cached) · the
+[watch chapter](../README.md)
 
 **References**
 

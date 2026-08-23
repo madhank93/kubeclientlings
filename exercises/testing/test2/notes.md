@@ -26,6 +26,22 @@ cs.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtim
 - Both arguments accept `"*"` as a wildcard: `PrependReactor("*", "*", ...)`
   breaks everything.
 
+**Under the hood**
+
+- `Fake.Invokes(action, defaultReturn)` walks `ReactionChain` in order, calling
+  each reactor whose `(verb, resource)` matches until one returns
+  `handled=true`. The tracker's own reactor is just the last link, installed by
+  the constructor.
+- Because the chain is ordered, `PrependReactor` is what puts yours ahead of the
+  tracker; `AddReactor` appends behind it, where the tracker has usually already
+  answered.
+
+**Common mistake**
+
+- Registering a reactor whose verb does not match the call — `"update"` for a
+  Create, or the singular resource name. Nothing warns you; the reactor is dead
+  code, the tracker answers normally, and the test passes for the wrong reason.
+
 **Key detail:** this is the only practical way to test the paths that matter
 most — `IsConflict` retry loops, `IsNotFound` handling, `IsTooManyRequests`
 backoff, and "the API server went away mid-reconcile". A live cluster will not
@@ -49,6 +65,11 @@ cs.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtim
 
 Closing over a counter is the standard way to fail the first N attempts and then
 succeed — exactly what a retry test needs.
+
+**See also:** test1 (the tracker being intercepted) · test3 (checking what actually ran) ·
+pods5 (the `apierrors` predicates these injected errors must satisfy) · pods3
+(the conflict-retry path worth testing this way) · the
+[testing chapter](../README.md)
 
 **References**
 

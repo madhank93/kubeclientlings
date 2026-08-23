@@ -24,6 +24,23 @@ cs.CoreV1().ConfigMaps(ns).Apply(ctx, applyB, metav1.ApplyOptions{FieldManager: 
 - Applying the *same* value to a field someone else owns is **not** a conflict —
   it becomes co-ownership. Conflicts are about disagreement, not about touching.
 
+**Under the hood**
+
+- `managedFields` holds one entry per (manager, operation, subresource) with the
+  owned paths encoded as a `FieldsV1` blob. A conflict is computed by
+  intersecting your incoming set with every *other* manager's set and keeping
+  the paths where the values disagree.
+- The 409 body is a `metav1.Status` whose `details.causes` lists each contested
+  path and its current owner, so the error is machine-readable, not just
+  human-readable.
+
+**Common mistake**
+
+- Setting `Force: true` everywhere to make conflicts go away. In a controller
+  that is correct; in an interactive tool it silently steals fields another
+  controller is maintaining, and the controller takes them straight back — an
+  invisible tug-of-war.
+
 **Key detail:** when to force, and when not to.
 
 - **Controllers should force.** A controller is the authority over the fields it
@@ -38,6 +55,10 @@ To *release* a field rather than steal it, simply stop including it in your
 apply — ownership disappears with the value. And note that dropping a manager
 name entirely (renaming your controller, say) does not clean up: those fields
 stay owned by a name nobody uses again.
+
+**See also:** ssa1 (ownership, and how apply removes fields) · opt3 (`ApplyOptions`) ·
+op3 (the same "only touch what you own" discipline, client-side) · the
+[SSA chapter](../README.md)
 
 **References**
 

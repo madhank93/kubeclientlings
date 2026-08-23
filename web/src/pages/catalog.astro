@@ -95,6 +95,7 @@ for (const [slug, t] of Object.entries(TOPICS)) {
                     <span class="ttier">{t.tier}</span>
                     <span class="tcount">{countFor(e.topic)} exercise{countFor(e.topic) === 1 ? '' : 's'}</span>
                     <span class="texp">▸</span>
+                    <span class="tchapter" role="button" tabindex="0">Read the chapter →</span>
                   </td>
                 </tr>
               );
@@ -124,6 +125,7 @@ for (const [slug, t] of Object.entries(TOPICS)) {
     <button class="topic-pop-x" id="topicPopX" aria-label="Close">✕</button>
     <h3 id="topicPopTitle"></h3>
     <p id="topicPopLearn"></p>
+    <button class="topic-pop-more" id="topicPopChapter">Read the chapter →</button>
   </div>
 
   <dialog id="catModal" class="cat-modal" aria-labelledby="mTitle">
@@ -147,6 +149,10 @@ for (const [slug, t] of Object.entries(TOPICS)) {
         <div class="m-section" id="mDetailWrap" hidden>
           <h3>The exercise</h3>
           <div class="sl-markdown-content m-md" id="mDetail"></div>
+        </div>
+        <div class="m-section" id="mChapterWrap" hidden>
+          <h3 id="mChapterH">The chapter</h3>
+          <div class="sl-markdown-content m-md" id="mChapter"></div>
         </div>
         <p class="m-loading" id="mLoading" hidden>Loading the exercise…</p>
       </div>
@@ -230,6 +236,9 @@ for (const [slug, t] of Object.entries(TOPICS)) {
     .tcount { margin-left: 0.6rem; font-weight: 400; color: var(--sl-color-gray-3); text-transform: none; letter-spacing: 0; }
     .texp { float: right; color: var(--sl-color-gray-3); transition: transform 0.12s; }
     .topic-row[aria-expanded="true"] .texp { transform: rotate(90deg); color: var(--sl-color-accent-high); }
+    .tchapter { margin-left: 0.6rem; font-weight: 400; text-transform: none; letter-spacing: 0;
+      color: var(--sl-color-accent-high); cursor: pointer; }
+    .tchapter:hover, .tchapter:focus-visible { text-decoration: underline; }
 
     .topic-pop { position: fixed; z-index: 5; box-sizing: border-box;
       background: var(--sl-color-bg); border: 1px solid var(--sl-color-accent);
@@ -244,6 +253,19 @@ for (const [slug, t] of Object.entries(TOPICS)) {
     .topic-pop-x { position: absolute; top: 0.5rem; right: 0.6rem; background: none; border: 0;
       color: var(--sl-color-gray-3); font-size: 0.9rem; cursor: pointer; line-height: 1; padding: 0.2rem; }
     .topic-pop-x:hover { color: var(--sl-color-white); }
+    .topic-pop-more { margin-top: 0.7rem; background: none; border: 0; padding: 0; cursor: pointer;
+      font-size: 0.84rem; font-weight: 600; color: var(--sl-color-accent-high); }
+    .topic-pop-more:hover { text-decoration: underline; }
+    .cat-modal article.chapter-only .m-run,
+    .cat-modal article.chapter-only .m-links,
+    .cat-modal article.chapter-only .m-desc,
+    .cat-modal article.chapter-only footer { display: none; }
+    /* In chapter mode the card is the chapter: no section rule, no repeated heading. */
+    .cat-modal article.chapter-only #mChapterH { display: none; }
+    .cat-modal article.chapter-only .m-section { margin-top: 0; border-top: 0; padding-top: 0; }
+    .cat-modal article.chapter-only h2 { font-family: inherit; }
+    .cat-modal article.chapter-only .m-body { padding-top: 0.5rem; }
+    .cat-modal .m-md > :first-child { margin-top: 0; }
 
     .tchip { display: inline-block; font-size: 0.66rem; font-weight: 700; padding: 0.12rem 0.4rem; border-radius: 0.3rem; color: #fff; }
     .slug { font-family: var(--sl-font-mono, monospace); font-size: 0.78rem; color: var(--sl-color-gray-1); }
@@ -288,6 +310,10 @@ for (const [slug, t] of Object.entries(TOPICS)) {
     .cat-modal .m-run code { font-size: 0.76rem; color: var(--sl-color-white);
       background: var(--sl-color-black); padding: 0.06rem 0.35rem; border-radius: 0.25rem; }
     .cat-modal .m-links { display: flex; flex-wrap: wrap; gap: 0.9rem; font-size: 0.82rem; margin-bottom: 0.4rem; }
+    /* Sits next to the GitHub anchor in the same row, so it has to read as a link. */
+    .cat-modal .m-links :global(button) { background: none; border: 0; padding: 0; cursor: pointer;
+      font: inherit; font-size: 0.82rem; color: var(--sl-color-text-accent); text-decoration: underline; }
+    .cat-modal .m-links :global(button:hover) { color: var(--sl-color-white); }
     .cat-modal .m-section { margin-top: 1.4rem; border-top: 1px solid var(--sl-color-gray-6); padding-top: 1rem; }
     .cat-modal .m-section h3 { margin: 0 0 0.6rem; font-size: 0.78rem; text-transform: uppercase;
       letter-spacing: 0.06em; color: var(--sl-color-gray-3); }
@@ -400,12 +426,28 @@ for (const [slug, t] of Object.entries(TOPICS)) {
       topicPopOwner = tr;
       tr.setAttribute('aria-expanded', 'true');
     }
+    function openChapterFor(tr: HTMLElement) {
+      const color = (tr.querySelector('.tdot') as HTMLElement)?.style.background || '';
+      const topic = tr.dataset.topic!;
+      closeTopicPop();
+      openChapter(topic, tr.dataset.label || topic, color);
+    }
     topicRows.forEach((tr) => {
       const toggle = () => (topicPopOwner === tr ? closeTopicPop() : openTopicPop(tr));
+      const cue = tr.querySelector<HTMLElement>('.tchapter');
+      // Pull mermaid in on intent, not on open: the parse alone is ~150ms.
+      cue?.addEventListener('pointerenter', () => { mermaidLib(); }, { once: true });
+      cue?.addEventListener('click', (e) => { e.stopPropagation(); openChapterFor(tr); });
+      cue?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openChapterFor(tr); }
+      });
       tr.addEventListener('click', toggle);
       tr.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
       });
+    });
+    document.getElementById('topicPopChapter')!.addEventListener('click', () => {
+      if (topicPopOwner) openChapterFor(topicPopOwner);
     });
     document.getElementById('topicPopX')!.addEventListener('click', closeTopicPop);
     // Reposition while pinned; dismiss on outside click / Escape.
@@ -428,6 +470,9 @@ for (const [slug, t] of Object.entries(TOPICS)) {
     const mRunCmd = document.getElementById('mRunCmd')!;
     const mLinks = document.getElementById('mLinks')!;
     const mDetailWrap = document.getElementById('mDetailWrap')!;
+    const mChapterWrap = document.getElementById('mChapterWrap')!;
+    const mChapterH = document.getElementById('mChapterH')!;
+    const mChapter = document.getElementById('mChapter')!;
     const mDetail = document.getElementById('mDetail')!;
     const mLoading = document.getElementById('mLoading')!;
     const mPrev = document.getElementById('mPrev') as HTMLButtonElement;
@@ -450,7 +495,107 @@ for (const [slug, t] of Object.entries(TOPICS)) {
       return data;
     }
 
+    const chapterCache = new Map<string, any>();
+
+    async function loadChapter(topic: string) {
+      if (chapterCache.has(topic)) return chapterCache.get(topic);
+      const res = await fetch(`/catalog-chapters/${topic}.json`);
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+      chapterCache.set(topic, data);
+      return data;
+    }
+
+    // Chapter HTML is injected after page load, so mermaid has to be told to
+    // draw it. The library is ~1MB, so it is imported only once a diagram is
+    // actually on screen.
+    let mermaidReady: Promise<any> | null = null;
+    function mermaidLib() {
+      if (!mermaidReady) {
+        const dark = document.documentElement.dataset.theme === 'dark'
+          || (!document.documentElement.dataset.theme
+              && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        mermaidReady = import('mermaid').then(({ default: mermaid }) => {
+          mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'default' });
+          return mermaid;
+        });
+      }
+      return mermaidReady;
+    }
+
+    // mermaid renders synchronously and one diagram can hold the main thread for
+    // most of a second, so they are drawn one per idle callback rather than in a
+    // single blocking pass: the chapter text stays scrollable while the diagrams
+    // fill in. onDone hands back the finished markup for caching, which is what
+    // makes reopening a chapter free. (An IntersectionObserver would be the
+    // natural fit, but it never fires for elements in a modal dialog's top layer.)
+    const nextIdle = (fn: () => void) =>
+      'requestIdleCallback' in window
+        ? (window as any).requestIdleCallback(fn, { timeout: 400 })
+        : setTimeout(fn, 0);
+
+    function drawDiagrams(root: HTMLElement, onDone?: () => void) {
+      const queue = [...root.querySelectorAll<HTMLElement>('pre.mermaid')]
+        .filter((n) => !n.dataset.drawn);
+      if (queue.length === 0) { onDone?.(); return; }
+      const step = async () => {
+        const n = queue.shift();
+        if (!n) { onDone?.(); return; }
+        n.dataset.drawn = '1';
+        try {
+          const mermaid = await mermaidLib();
+          await mermaid.run({ nodes: [n] });
+        } catch {
+          delete n.dataset.drawn; // leave the source visible
+        }
+        nextIdle(step);
+      };
+      nextIdle(step);
+    }
+
+    // Chapter mode reuses the modal with the exercise-specific chrome hidden.
+    // A class, not the hidden attribute: these parts set their own display.
+    const mCard = modal.querySelector('article')!;
+    function setChapterMode(on: boolean) {
+      mCard.classList.toggle('chapter-only', on);
+    }
+
+    async function openChapter(topic: string, label: string, color: string, push = true) {
+      current = null;
+      setChapterMode(true);
+      mTopic.textContent = 'Chapter';
+      mTopic.setAttribute('style', `background:${color}`);
+      mTitle.textContent = label;
+      mDetailWrap.hidden = true;
+      mDetail.innerHTML = '';
+      mChapterWrap.hidden = true;
+      mChapter.innerHTML = '';
+      mChapterH.textContent = 'The chapter';
+      mLoading.hidden = false;
+      mLoading.textContent = 'Loading the chapter…';
+      mBody.scrollTop = 0;
+      if (!modal.open) modal.showModal();
+      if (push) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('exercise');
+        url.searchParams.set('chapter', topic);
+        history.pushState({ chapter: topic }, '', url);
+      }
+      try {
+        const data = await loadChapter(topic);
+        mLoading.hidden = true;
+        if (data.chapter) {
+          mChapter.innerHTML = data.chapter;
+          mChapterWrap.hidden = false;
+          drawDiagrams(mChapter, () => chapterCache.set(topic, { chapter: mChapter.innerHTML }));
+        }
+      } catch {
+        mLoading.textContent = 'Could not load this chapter.';
+      }
+    }
+
     async function openRow(row: HTMLTableRowElement, push = true) {
+      setChapterMode(false);
       current = row;
       const d = row.dataset;
       const slug = d.slug!;
@@ -462,6 +607,8 @@ for (const [slug, t] of Object.entries(TOPICS)) {
       mDesc.textContent = d.desc || '';
       mRunCmd.textContent = `./bin/kubeclientlings run ${slug}`;
 
+      const topicLabel = (document.querySelector(`tr.topic-row[data-topic="${d.topic}"]`) as HTMLElement)?.dataset.label || d.topic!;
+
       mLinks.innerHTML = '';
       if (d.path) {
         const a = document.createElement('a');
@@ -470,7 +617,15 @@ for (const [slug, t] of Object.entries(TOPICS)) {
         a.textContent = '↗ View the source on GitHub';
         mLinks.append(a);
       }
+      // The chapter is one topic-wide document: linked, not inlined, so that
+      // stepping through a topic's exercises doesn't repeat it every time.
+      const chapterLink = document.createElement('button');
+      chapterLink.textContent = `Read the ${topicLabel} chapter →`;
+      chapterLink.addEventListener('click', () => openChapter(d.topic!, topicLabel, topicColor));
+      mLinks.append(chapterLink);
 
+      mChapterWrap.hidden = true;
+      mChapter.innerHTML = '';
       mDetailWrap.hidden = true;
       mDetail.innerHTML = '';
       mLoading.hidden = false;
@@ -531,8 +686,9 @@ for (const [slug, t] of Object.entries(TOPICS)) {
       if (current) current.focus();
       current = null;
       const url = new URL(window.location.href);
-      if (url.searchParams.has('exercise')) {
+      if (url.searchParams.has('exercise') || url.searchParams.has('chapter')) {
         url.searchParams.delete('exercise');
+        url.searchParams.delete('chapter');
         history.pushState({}, '', url.pathname + url.search);
       }
     });
@@ -547,7 +703,8 @@ for (const [slug, t] of Object.entries(TOPICS)) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); search.focus(); search.select(); }
     });
 
-    // Deep links: /catalog/?exercise=<name> opens straight into the modal;
+    // Deep links: /catalog/?exercise=<name> and /catalog/?chapter=<topic> open
+    // straight into the modal;
     // /catalog/?topic=<topic> preselects the topic filter.
     function openFromUrl(push = false) {
       const params = new URL(window.location.href).searchParams;
@@ -555,6 +712,13 @@ for (const [slug, t] of Object.entries(TOPICS)) {
       if (topic && [...topicSel.options].some((o) => o.value === topic)) {
         topicSel.value = topic;
         apply();
+      }
+      const chapter = params.get('chapter');
+      if (chapter) {
+        const tr = document.querySelector<HTMLElement>(`tr.topic-row[data-topic="${chapter}"]`);
+        const color = (tr?.querySelector('.tdot') as HTMLElement)?.style.background || '';
+        openChapter(chapter, tr?.dataset.label || chapter, color, push);
+        return;
       }
       const want = params.get('exercise');
       if (!want) { closeModal(); return; }

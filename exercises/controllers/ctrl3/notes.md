@@ -46,6 +46,22 @@ still believes it leads while a challenger has already claimed the lease. Two
 active controllers, which is exactly the outcome the whole mechanism exists to
 prevent. That is the check `NewLeaderElector` refuses to build past.
 
+**Under the hood**
+
+- The elector loop is `wait.JitterUntil(tryAcquireOrRenew, RetryPeriod,
+  JitterFactor, ...)`. A renew is a conditional `Update` of the Lease guarded by
+  its `resourceVersion`, so two candidates writing at once means one gets a 409
+  and loses — the lock is ordinary optimistic concurrency.
+- A challenger compares `now` against `renewTime + LeaseDuration` using *its
+  own* clock, which is why the durations must leave room for clock skew as well
+  as for jitter.
+
+**Common mistake**
+
+- Writing an `OnStoppedLeading` that logs and returns. The process keeps
+  reconciling while another replica already holds the lease, which is exactly the
+  two-writer scenario leader election exists to prevent. Terminate.
+
 **Key detail:** `OnStoppedLeading` must **terminate the process** (or at least
 stop every reconcile loop), and it must do so fast. Losing the lease usually
 means you were partitioned or stalled — another replica is already leading, and
@@ -66,6 +82,10 @@ Also note this is a **general** distributed lock, not a controller-only tool —
 anything needing "exactly one instance active" can use the same Lease.
 `resourcelock.LeaseLock` is the modern lock type; the older ConfigMap and
 Endpoints locks are deprecated.
+
+**See also:** ctrl2 (the controller that should only run when leading) · pods3 (the same
+optimistic concurrency underneath the Lease) · the
+[controllers chapter](../README.md)
 
 **References**
 

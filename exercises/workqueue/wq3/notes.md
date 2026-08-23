@@ -27,6 +27,22 @@ handleErr := func(key string) {
   the queue, but any future change to that object generates a new event and a
   new enqueue with a clean counter. You lose the retry loop, not the object.
 
+**Under the hood**
+
+- `NumRequeues` reads the same `map[item]int` the exponential limiter maintains,
+  so the cap costs nothing and needs no state of your own — but it also means
+  `Forget` resets the cap as well as the delay.
+- Dropping a key is safe only because the informer is still watching: any later
+  change to the object produces a fresh event, a fresh enqueue and a zeroed
+  counter.
+
+**Common mistake**
+
+- Dropping the key without saying anything. A poison item then disappears from
+  the queue and from everyone's attention: no Event on the object, no condition,
+  and only a log line that has long scrolled past by the time someone asks why
+  nothing happened.
+
 **Key detail:** this three-branch shape belongs *around* the reconcile, not
 inside it:
 
@@ -65,6 +81,10 @@ several minutes of retrying before giving up. The `3` in this exercise keeps
 the run fast; pick your own from how transient your failures really are, and
 lean higher than feels natural — dropping a key is permanent until something
 else touches the object.
+
+**See also:** wq2 (the counter being read) · wq1 (the loop this wraps) · watch4 (emitting
+the Warning that makes the drop visible) · ctrl2 (where `handleErr` lives) · the
+[workqueue chapter](../README.md)
 
 **References**
 

@@ -23,6 +23,23 @@ OwnerReferences: []metav1.OwnerReference{{
 - You only get a UID from the server, which is why the code creates the owner
   first and reads `owner.UID` off the returned object.
 
+**Under the hood**
+
+- The garbage collector builds a graph of every object in the cluster keyed by
+  UID, using ownerReferences as edges. A node whose owner UID is absent from the
+  graph is *dangling*, and the GC deletes it — the check is UID identity, never
+  name.
+- `BlockOwnerDeletion` is enforced at admission and requires `delete` permission
+  on the owner's `finalizers` subresource, which is why setting it can fail with
+  a Forbidden that names a resource you were not obviously touching.
+
+**Common mistake**
+
+- Filling in `APIVersion`, `Kind` and `Name` but leaving `UID` empty because the
+  owner "obviously exists". Nothing rejects that, and the GC treats it as a
+  reference to an object that is gone — so the child is deleted, promptly and
+  inexplicably.
+
 **Key detail:** ownerReferences are **namespace-local**. A namespaced object
 cannot be owned by an object in another namespace, and a cluster-scoped object
 cannot be owned by a namespaced one. Violating that doesn't error at admission —
@@ -37,6 +54,10 @@ child to go first.
 
 In practice you rarely build this struct by hand — `controllerutil.SetOwnerReference`
 and `SetControllerReference` do it, including resolving the GVK from the scheme.
+
+**See also:** op2 (the same reference, used as a routing table) · pods5 (deletion
+propagation policies) · fin1 (the other reason a delete does not delete) · the
+[options chapter](../README.md)
 
 **References**
 

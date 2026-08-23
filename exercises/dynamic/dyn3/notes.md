@@ -26,6 +26,22 @@ widget := &unstructured.Unstructured{Object: map[string]any{
 - The dynamic client is the natural fit here: there are no generated Go structs
   for a type invented at runtime, so the object is built as a `map[string]any`.
 
+**Under the hood**
+
+- Creating a CRD writes an object to `apiextensions.k8s.io/v1`; a controller
+  inside the apiserver then builds the CRD's structural schema, installs
+  handlers for each served version and refreshes the discovery document. Only
+  then does it set `Established=True`.
+- Pruning happens on write against that structural schema, before validation, so
+  a field the schema does not declare is removed rather than rejected.
+
+**Common mistake**
+
+- Creating a custom resource immediately after creating its CRD. The endpoints
+  are not registered yet, so you get a 404 that reads exactly like a typo — and
+  it fails often enough to be maddening and rarely enough to reach production.
+  Poll `Established`.
+
 **Key detail:** creating a CRD is asynchronous. The object exists immediately,
 but the API server has to register handlers and refresh discovery before the new
 endpoints answer. That is what the `Established` condition means, and polling for
@@ -42,6 +58,10 @@ declare and watch it silently disappear.
 Finally, CRDs are cluster-scoped and shared. That's why the exercise deletes any
 leftover from a previous run before creating its own — and why deleting a CRD
 deletes every custom resource of that type, cluster-wide, with no confirmation.
+
+**See also:** dyn1 (the GVR shape) · sub2 (adding the status subresource to this CRD) ·
+crd1 (typed access to what you just created) · the
+[dynamic chapter](../README.md)
 
 **References**
 
