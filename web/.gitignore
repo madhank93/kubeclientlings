@@ -5,6 +5,7 @@ dist/
 # generated catalog data (produced by `go run ./web/gen`)
 src/data/catalog.ts
 src/data/lesson-details/
+src/data/chapters/
 
 # dependencies
 node_modules/

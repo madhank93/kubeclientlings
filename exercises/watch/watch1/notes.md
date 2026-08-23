@@ -26,6 +26,23 @@ case watch.Deleted:
   use the two-value form — on a `watch.Error` event the object is a
   `*metav1.Status`, and a single-value assertion would panic.
 
+**Under the hood**
+
+- A watch is one HTTP response with `Transfer-Encoding: chunked`; each chunk is
+  a serialised `metav1.WatchEvent`. `StreamWatcher` decodes them on a goroutine
+  and pushes onto the channel `ResultChan()` hands you, so `Stop()` is what ends
+  that goroutine and closes the body.
+- The channel is unbuffered past a small window: a slow consumer applies
+  backpressure all the way to the apiserver, and a consumer that stops reading
+  entirely is eventually disconnected.
+
+**Common mistake**
+
+- Asserting `event.Object.(*corev1.Pod)` with the single-value form. It works
+  for every normal event and panics the first time a `watch.Error` arrives
+  carrying a `*metav1.Status` — which is precisely the moment you most needed
+  the program alive.
+
 **Key detail:** two event types exist that aren't object changes.
 `watch.Error` carries a `*metav1.Status` — most often "resourceVersion too
 old" (HTTP 410 Gone), meaning the server's history window has passed you by and
@@ -40,6 +57,10 @@ exercise watches.
 Raw `Watch` is the primitive under everything else. Production code almost
 never uses it directly — it uses an informer (see the `informers` topic), which
 adds relisting, reconnection and a local cache on top.
+
+**See also:** watch2 (starting the stream at the right point) · watch3 (surviving the
+stream ending) · inf1 (the machinery that wraps all of this) · the
+[watch chapter](../README.md)
 
 **References**
 

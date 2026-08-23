@@ -34,6 +34,21 @@ return resp
   rejected — write it for them, not for your logs. `Result.Code` sets the HTTP
   status.
 
+**Under the hood**
+
+- The apiserver POSTs an `AdmissionReview` whose `request.object.raw` is the
+  serialised object and blocks the API call on your response. It matches the
+  reply by `response.uid`, so an unmatched UID is a protocol error decided
+  before your verdict is even read.
+- Validating webhooks run after all mutating ones, against the already-mutated
+  object — so what you validate is what will be stored.
+
+**Common mistake**
+
+- Returning early on some branch without setting `Allowed`. The zero value is
+  `false`, so that branch denies everything that reaches it — fail-closed, which
+  is right for a security control and confusing when it was an oversight.
+
 **Key detail:** the parts *around* the function are where webhooks actually
 bite in production.
 
@@ -50,6 +65,9 @@ bite in production.
 Since Kubernetes 1.30, simple policies like this one are often better expressed
 as a **ValidatingAdmissionPolicy** with a CEL expression — no server, no certs,
 no availability risk. Reach for a webhook when you need real code.
+
+**See also:** wh2 (the mutating half) · opt4 (ownerReferences, a common thing to validate)
+· the [webhooks chapter](../README.md)
 
 **References**
 

@@ -26,6 +26,22 @@ obj := create.GetObject().(*corev1.ConfigMap)
   "it created a ConfigMap named `audited` in `demo` with `data.k=v`" is the one
   that catches a regression.
 
+**Under the hood**
+
+- `Invokes` appends every action to `Fake.actions` under a lock before consulting
+  the reactor chain, so reads are recorded even when a reactor short-circuits the
+  call. `Actions()` returns a copy of that slice.
+- Each action carries its resource as a GVR and its subresource as a separate
+  string, which is why `update` on `status` and `update` on the object itself are
+  distinguishable only by `GetSubresource()`.
+
+**Common mistake**
+
+- Asserting on `len(cs.Actions())`. Reads count, so the number changes the
+  moment someone adds a `Get` to the code under test — and the test fails
+  without anything having broken. Filter with `Matches` and assert on the
+  payload.
+
 **Key detail:** `Actions()` records **reads too**, and that trips people up.
 A test that asserts `len(actions) == 1` after a reconcile that did one Get and
 one Create fails, and the count is fragile as the code evolves. Filter instead
@@ -45,6 +61,10 @@ The other reason this matters: for **subresource** writes the verb alone is
 ambiguous — an `UpdateStatus` records as `update` with
 `GetSubresource() == "status"`. If your controller writes both spec and status,
 that field is how you tell the two apart.
+
+**See also:** test1 (the fake doing the recording) · test2 (reactors, which do not suppress
+recording) · sub2 (status writes, the case where the subresource field matters)
+· the [testing chapter](../README.md)
 
 **References**
 

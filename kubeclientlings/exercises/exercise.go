@@ -30,6 +30,17 @@ func (e Exercise) Notes() string {
 	return strings.TrimRight(string(data), "\n")
 }
 
+// Chapter returns the topic's long-form walk-through — the README.md of the
+// directory holding the exercise — or "" when absent. Notes explain one
+// exercise; the chapter explains the mechanism behind the whole topic.
+func (e Exercise) Chapter() string {
+	data, err := os.ReadFile(filepath.Join(filepath.Dir(filepath.Dir(e.Path)), "README.md"))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimRight(string(data), "\n")
+}
+
 func (e Exercise) State() State {
 	data, err := os.ReadFile(e.Path)
 	if err != nil {

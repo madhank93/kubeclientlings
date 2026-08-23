@@ -24,6 +24,22 @@ got, err := cs.CoreV1().Pods("demo").Get(ctx, "seeded", metav1.GetOptions{})
   an ordinary `NotFound`, not a fallback or a wildcard — same rule as the real
   API.
 
+**Under the hood**
+
+- `fake.Clientset` embeds `testing.Fake` and installs a default
+  `ObjectReaction` bound to a `testing.ObjectTracker`. Every generated method
+  builds the same `Action` value the real client would have sent as a request,
+  and hands it to the reactor chain instead of a transport.
+- The tracker stores objects in `map[schema.GroupVersionResource][]runtime.Object`
+  and applies real Get/Create/Update/Delete semantics, including
+  `AlreadyExists` and `NotFound`.
+
+**Common mistake**
+
+- Accepting `*kubernetes.Clientset` in your own function signatures. The fake
+  cannot be substituted for a concrete struct, so the code becomes untestable
+  without a cluster — take `kubernetes.Interface` instead.
+
 **Key detail:** the fake is a good imitation, not a real API server, and the
 gaps are where tests give false confidence:
 
@@ -55,6 +71,10 @@ So if the code under test uses `Apply` (the `ssa` topic), you need
 `managedFields` to track. That same comment warns SSA support for **CRDs** is
 still missing, so an apply against a custom resource is not faithfully faked by
 either.
+
+**See also:** test2 (making the fake fail on demand) · test3 (asserting on what it
+recorded) · setup2 (the real clientset behind the same interface) · the
+[testing chapter](../README.md)
 
 **References**
 
