@@ -28,6 +28,23 @@ happens gives you the *previous* rollout's numbers, which very often look
 complete — so the wait returns instantly and you assert against a version that
 was never deployed.
 
+**Under the hood**
+
+- `metadata.generation` is incremented by the registry on any write that changes
+  `spec`, and only `spec` — that is exactly what enabling the status subresource
+  buys. The Deployment controller copies it into `status.observedGeneration` at
+  the end of each successful sync.
+- `UpdatedReplicas` is computed by counting pods whose `pod-template-hash`
+  matches the current template's, which is why it is the counter that answers
+  "has the new version rolled out".
+
+**Common mistake**
+
+- Polling `Status.Replicas == replicas` and declaring victory. It counts old
+  pods still draining and new pods still starting, so it is frequently correct
+  before anything has actually happened — and always correct during a rollout
+  that has not begun.
+
 **Key detail:** this is exactly the logic `kubectl rollout status` implements,
 and it generalises to every controller that has a status. Whenever you poll a
 `status` block, check `observedGeneration` against `generation` first; only then
@@ -37,6 +54,10 @@ For failure detection rather than success, read
 `Status.Conditions`: a `Progressing` condition with
 `reason: ProgressDeadlineExceeded` is how a wedged rollout announces itself, and
 without it your wait just runs to timeout with no explanation.
+
+**See also:** deploy3 (the patch that starts the rollout) · sub2 (why `generation` only
+behaves with the status subresource) · watch4 (surfacing progress to humans) ·
+the [deployments chapter](../README.md)
 
 **References**
 

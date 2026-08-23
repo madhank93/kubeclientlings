@@ -31,6 +31,22 @@ Putting the mutations inside means they are applied *on top of* whatever the
 server currently has, which is what "lay desired state over observed state"
 means.
 
+**Under the hood**
+
+- `CreateOrUpdate` calls `Get(ctx, key, obj)` **into the object you passed**,
+  then compares a `DeepCopyObject` snapshot against the post-`mutate` value with
+  `equality.Semantic.DeepEqual`. Identical means no request is issued at all —
+  that is where `OperationResultNone` comes from.
+- The wrapper re-derives the key after `mutate` and errors if name or namespace
+  moved, because the object it would then write is not the one it read.
+
+**Common mistake**
+
+- Setting desired state on the object before calling `CreateOrUpdate`. Step one
+  overwrites it with the live object, so the update path writes nothing new —
+  and the create path still works perfectly, which is why the bug ships and only
+  shows up as "it never updates".
+
 **Key detail:** three rules for a `mutate` function.
 
 - **Idempotent.** It runs on every reconcile, and its no-change case is what
@@ -52,6 +68,10 @@ objects with several writers.
 The three phases the exercise walks through — create, update, drift repair — all
 come out of this one code path. That's the payoff: a reconciler that converges
 rather than one that reacts.
+
+**See also:** op1 (the reconcile contract) · op2 (the ownerRef `mutate` must set) · ssa1
+(the server-side version of the same discipline) · the
+[operator chapter](../README.md)
 
 **References**
 

@@ -25,6 +25,22 @@ _, err = cs.CoreV1().Pods(namespace).Patch(ctx, name, ...)
   to the "default" namespace — it fails, or worse, addresses something you
   didn't mean.
 
+**Under the hood**
+
+- The handler runs on the informer's delivery goroutine and the worker on its
+  own, connected only by the queue. That separation is what lets the informer
+  keep draining its watch while a slow reconcile is in progress.
+- `Patch` bypasses optimistic concurrency entirely: no `resourceVersion` on the
+  wire means the apiserver merges against whatever is current, so a second event
+  arriving mid-reconcile cannot produce a 409.
+
+**Common mistake**
+
+- Enqueueing `pod.Name` instead of the namespaced key. `SplitMetaNamespaceKey`
+  then yields an empty namespace, and `Pods("")` builds a cluster-wide URL that
+  a namespaced write cannot use — so the reconcile fails on every object, in a
+  way that reads like a permissions problem.
+
 **Key detail:** enqueueing a *key* rather than the *object* is the design
 decision that defines Kubernetes controllers. Keys deduplicate in the queue, and
 by the time the worker runs it re-reads current state — so it acts on what is
@@ -47,6 +63,10 @@ One thing this file skips for brevity: a real worker must handle the key's
 object being **gone**. `lister.Pods(ns).Get(name)` returning `IsNotFound` means
 "it was deleted" — that's a normal reconcile outcome (clean up, return nil), not
 an error to retry.
+
+**See also:** inf3 (the key function) · ctrl1 (the `Get`/`Done` contract the worker obeys)
+· wq3 (what to do when the reconcile keeps failing) · op1 (the same loop, with
+the machinery hidden) · the [controllers chapter](../README.md)
 
 **References**
 

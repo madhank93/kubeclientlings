@@ -30,6 +30,23 @@ err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
   other writer finishes, so retrying promptly beats backing off; the growing
   backoff in the `workqueue` topic solves a different problem.
 
+**Under the hood**
+
+- `resourceVersion` is etcd's revision for that key, passed through opaquely.
+  The registry does a transactional compare-and-swap on it, so a mismatch
+  becomes `StatusReasonConflict` and never a partial write.
+- `RetryOnConflict` is `wait.ExponentialBackoff` with a predicate: it runs the
+  closure, returns immediately unless `apierrors.IsConflict(err)`, and otherwise
+  sleeps the next backoff step and runs it again. Nothing is retried that is not
+  a conflict.
+
+**Common mistake**
+
+- Hoisting the `Get` out of the closure "to avoid re-reading". Every retry then
+  resends the same stale `resourceVersion`, so all five attempts fail
+  identically and the error you finally return is a conflict that could never
+  have cleared.
+
 **Key detail:** for Pods the conflict is not theoretical — the kubelet writes
 `status` continuously, so the resourceVersion of a running pod changes on its
 own every few seconds. Any read-modify-write on a live object needs the retry.
@@ -42,6 +59,10 @@ and it is much worse than a 409.
 
 If you only want to change a couple of fields, `Patch` (pods4) or Server-Side
 Apply (the `ssa` topic) avoid the whole cycle.
+
+**See also:** pods4 (the patch that avoids this cycle entirely) · ssa1 (the declarative
+version) · sub2 (status writes, the most contended of all) · the
+[pods chapter](../README.md)
 
 **References**
 

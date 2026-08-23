@@ -27,6 +27,23 @@ u := &unstructured.Unstructured{Object: m}
   against the endpoint you POSTed to, so both have to be there and both have to
   agree with the GVR.
 
+**Under the hood**
+
+- `ToUnstructured` reflects over the pointed-to value and emits only
+  JSON-compatible types, honouring `omitempty` exactly as `encoding/json` would.
+  `TypeMeta`'s two fields both carry `omitempty`, so a zero `TypeMeta`
+  contributes no keys at all.
+- The dynamic client reads `apiVersion` and `kind` off the map to build the
+  request body and lets the server validate them against the endpoint — it never
+  consults a scheme of its own.
+
+**Common mistake**
+
+- Reusing a struct that round-tripped fine through the typed clientset. The
+  typed path fills `TypeMeta` in for you, so nobody ever sets it explicitly —
+  and on the dynamic path the object arrives with no `kind`, which the server
+  rejects.
+
 **Key detail:** this is the asymmetry that catches people. With the **typed**
 clientset you never set `TypeMeta` — the client knows the type at compile time
 and fills it in, and objects you `Get` back often have it *cleared*. With the
@@ -47,6 +64,10 @@ Note also that `ToUnstructured` produces only JSON-compatible values
 (`string`, `bool`, `int64`, `float64`, `map[string]any`, `[]any`). A struct
 field of a type it can't represent is an error, not a silent drop — the one
 place this direction is louder than the other.
+
+**See also:** crd1 (the reading direction) · dyn3 (creating a custom resource with this
+map) · dyn1 (the GVR the `TypeMeta` must agree with) · the
+[CRDs chapter](../README.md)
 
 **References**
 

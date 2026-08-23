@@ -29,6 +29,22 @@ frontend, err := informer.GetIndexer().ByIndex("byTier", "frontend")
   files it under nothing, which is the clean way to skip objects the index
   doesn't apply to.
 
+**Under the hood**
+
+- `threadSafeStore` keeps `indices map[string]Index` where an `Index` is
+  `map[string]sets.String` — index name to value to the set of object keys.
+  `updateIndices` runs on every add, update and delete, recomputing that
+  object's buckets, so `ByIndex` is two map lookups and a key-by-key fetch.
+- `AddIndexers` refuses after start because the objects already in the store
+  were never passed through the new `IndexFunc`, leaving the index silently
+  incomplete rather than merely empty.
+
+**Common mistake**
+
+- Filing under one value and querying with another — indexing by `pod.Name` and
+  looking up a tier, say. `ByIndex` returns an empty slice and a nil error, so
+  the reconcile concludes there are no matching objects and does nothing.
+
 **Key detail:** the value you file under has to be the value you look up. The
 broken version files pods under `pod.Name` and then asks for `"frontend"`,
 which is nobody's name — so `ByIndex` returns an empty slice and a `nil` error.
@@ -51,6 +67,10 @@ layer up.
 
 One caution carried over from inf1: objects returned by `ByIndex` are pointers
 into the shared cache. `DeepCopy()` before mutating.
+
+**See also:** inf3 (the primary key this sits beside) · inf4 (the other before-`Start`
+rule) · opt2 (field selectors, the server-side analogue) · the
+[informers chapter](../README.md)
 
 **References**
 

@@ -5,6 +5,7 @@ KEYS
   e            open it in $EDITOR, then re-run on exit
   h            hint
   x            explain — the teaching walk-through for this exercise
+  c            chapter — the long-form walk-through for this topic
   r            reset the exercise to its starting state
   n            jump to the next unsolved exercise
   /            search        esc  clear
@@ -24,6 +25,10 @@ LEARN SECTION
   When an exercise passes, a "Learn:" walk-through appears under the output —
   the fixed code, why it works, the detail that bites people, and links to the
   client-go docs. Press x any time to show or hide it.
+
+  c opens the topic's chapter instead: one document explaining the machinery
+  behind every exercise in the topic. It is the same README.md the topic
+  directory carries, so it is one document, not a copy per exercise.
 
 SAVING A FILE RE-RUNS IT
 

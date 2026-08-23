@@ -22,6 +22,23 @@ pods, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
   listers filter without a network call, and why the same type appears in both
   places.
 
+**Under the hood**
+
+- A `labels.Selector` is a slice of `Requirement{key, operator, values}`.
+  `String()` renders them sorted so the same set always produces the same query
+  string — which matters, because that string is part of the watch cache key on
+  the server.
+- The same `Requirement` slice powers `Matches()`, so the selector you send to
+  the apiserver and the one a lister evaluates in memory are literally the same
+  value evaluated by two different backends.
+
+**Common mistake**
+
+- Assembling the query string with `fmt.Sprintf`. It escapes nothing and
+  validates nothing, so a value containing a comma or a space becomes a
+  different selector than you meant — and one that still parses, so no error
+  ever surfaces.
+
 **Key detail:** `SelectorFromSet` is equality-only. For anything richer, build
 requirements explicitly:
 
@@ -37,6 +54,10 @@ Note that `labels.SelectorFromSet` skips validation for speed. Its stricter
 sibling `labels.ValidatedSelectorFromValidatedSet` (and plain
 `labels.Parse`) will reject an invalid key — use those on anything
 user-supplied.
+
+**See also:** opt2 (the other filtering axis) · pods2 (this selector on a real list) ·
+inf4 (the same selectors, narrowing an informer) · the
+[options chapter](../README.md)
 
 **References**
 

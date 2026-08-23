@@ -23,6 +23,22 @@ list, err := dyn.Resource(gvr).Namespace(ns).List(ctx, metav1.ListOptions{})
   generated structs, which is exactly why this client works on CRDs it has
   never heard of.
 
+**Under the hood**
+
+- The dynamic client builds the URL by hand from the GVR:
+  `/apis/{group}/{version}` (or `/api/{version}` when the group is empty), then
+  `namespaces/{ns}` if a namespace was set, then the resource segment. There is
+  no scheme lookup and no type registry involved.
+- Responses are decoded by `unstructured.UnstructuredJSONScheme` straight into
+  `map[string]any`, which is why the client works on types it has never been
+  compiled against.
+
+**Common mistake**
+
+- Putting the Kind in the `Resource` field — `Pod` instead of `pods`. The
+  resulting URL is one nobody serves, so you get a 404 that reads like the
+  object is missing rather than like the path is wrong.
+
 **Key detail:** the plural is not always mechanical. `endpoints` is already
 plural, `networkpolicies` isn't `networkpolicys`, and subresources get their own
 segments. Rather than guessing, resolve at runtime with a **RESTMapper**:
@@ -38,6 +54,10 @@ until runtime.
 
 Note also `dyn.Resource(gvr)` with no `.Namespace(ns)` — that's the
 cluster-scoped (or all-namespaces) form, the equivalent of `Pods("")`.
+
+**See also:** dyn2 (reading what comes back) · dyn4 (resolving GVRs at runtime instead of
+guessing) · crd2 (the `TypeMeta` the dynamic client routes on) · pods1 (the same
+URL, via the typed client) · the [dynamic chapter](../README.md)
 
 **References**
 

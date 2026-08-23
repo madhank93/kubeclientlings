@@ -25,6 +25,23 @@ So the sequence in this exercise — `Get("a")`, `Add("a")`, `Done("a")` — yie
 `a, b, a`. Without the `Done`, `"a"` sits in `processing` forever, the re-added
 copy is never released, and the third `Get` blocks until the test times out.
 
+**Under the hood**
+
+- `Get` blocks on a condition variable until `queue` is non-empty or the queue
+  shuts down, then moves the key from `queue` into the `processing` set. The
+  second return is `shuttingDown && len(queue) == 0` — a drain signal, not an
+  error.
+- `Done` removes the key from `processing` and, if it was marked dirty while in
+  flight, appends it to `queue` and signals a waiter. That single branch is the
+  whole hold-back mechanism.
+
+**Common mistake**
+
+- Calling `Done` only on the success path, or after an early `return` that skips
+  it. The key stays in `processing` forever, so every subsequent `Add` for that
+  object is absorbed silently and it is never reconciled again — with no error
+  anywhere.
+
 **Key detail:** this is what makes concurrent workers safe. A key is in
 `processing` at most once, so N workers can share one queue and no two ever
 reconcile the same object at the same time — no locking in your reconcile code.
@@ -39,6 +56,10 @@ so a panic in reconcile can't strand the key either.
 Note the shutdown protocol too: `q.Get()` returns `(zero, true)` once `ShutDown`
 has been called and the queue is drained — that boolean is the worker's exit
 signal, not an error.
+
+**See also:** wq1 (the same contract from the queue's side) · ctrl2 (the loop in a real
+controller) · inf2 (what puts keys here) · the
+[controllers chapter](../README.md)
 
 **References**
 

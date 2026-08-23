@@ -27,6 +27,22 @@ watcher, err := watchtools.NewRetryWatcherWithContext(ctx, list.ResourceVersion,
   just consume one. Note this is `WatchFuncWithContext` — the context-aware
   variant, which is what lets `ctx` cancellation propagate into the retry loop.
 
+**Under the hood**
+
+- `RetryWatcher` runs its own loop: it calls your watch function, forwards every
+  event while recording the `resourceVersion` of the last one delivered, and on
+  channel close reconnects from that version after a short backoff. Consumers
+  see one channel and never learn a reconnect happened.
+- It classifies errors: a `watch.Error` carrying `Reason: Expired` (410) is
+  terminal and closes the result channel, while transient failures are retried.
+
+**Common mistake**
+
+- Passing `"0"` because "it worked with a plain watch". `NewRetryWatcher`
+  refuses to construct — deliberately. Neither `""` nor `"0"` identifies a point
+  in history, so after a reconnect the watcher could not promise it had neither
+  skipped nor replayed events.
+
 **Key detail:** `RetryWatcher` rejects `""` and `"0"` at construction — it
 returns an error rather than starting. That refusal is deliberate: neither value
 identifies a point in history, so after a reconnect the watcher could not
@@ -38,6 +54,10 @@ window passes you, the resourceVersion the watcher is holding becomes invalid
 and no amount of retrying helps — you have to List again and construct a new
 watcher. Handling that is one of the things an informer's `Reflector` adds on
 top, which is the honest reason to prefer informers for anything long-lived.
+
+**See also:** watch2 (the list-then-watch this depends on) · inf1 (the `Reflector`, which
+also handles 410) · setup3 (why a watch client wants no `Timeout`) · the
+[watch chapter](../README.md)
 
 **References**
 

@@ -24,6 +24,22 @@ return false, nil // still terminating
   point: returning the NotFound as an error would abort the poll at the exact
   moment it succeeded.
 
+**Under the hood**
+
+- `Delete` writes `deletionTimestamp` and `deletionGracePeriodSeconds` and
+  returns 200 with the object. Actual removal happens once the grace period
+  elapses *and* `metadata.finalizers` is empty — the registry's delete path
+  checks both.
+- `apierrors.IsNotFound` unwraps through `errors.As` to `*errors.StatusError`
+  and compares `Status().Reason`, so it survives wrapping with `%w` and does not
+  care about the message text.
+
+**Common mistake**
+
+- Checking `err != nil` before `IsNotFound`. The NotFound *is* a non-nil error,
+  so the generic branch swallows it and the poll aborts at the exact moment it
+  succeeded. Predicate first, generic error second.
+
 **Key detail:** the same family covers the rest of the API's error vocabulary,
 and controllers lean on all of it: `IsAlreadyExists` (create-if-absent),
 `IsConflict` (retry the read-modify-write), `IsForbidden` (RBAC — never worth
@@ -36,6 +52,10 @@ gone, `Background` deletes the owner immediately, `Orphan` leaves dependents
 behind) and `Preconditions` (refuse the delete unless the UID/resourceVersion
 still matches — protection against deleting a *recreated* object with the same
 name).
+
+**See also:** fin1 (why a delete can hang indefinitely) · pods1 (create, the other end) ·
+opt4 (ownerReferences, the other way objects disappear) · the
+[pods chapter](../README.md)
 
 **References**
 

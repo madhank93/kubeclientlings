@@ -51,12 +51,15 @@ type Model struct {
 	cursor int // index into items; always points at an exercise row
 
 	// detail of the currently selected exercise
-	status    exercises.Status
-	result    exercises.Result
-	verifying bool
-	hasResult bool
-	showHint  bool
-	showNotes bool // teaching walk-through: auto on pass, toggled with the Explain key
+	status      exercises.Status
+	result      exercises.Result
+	verifying   bool
+	hasResult   bool
+	showHint    bool
+	showNotes   bool // teaching walk-through: auto on pass, toggled with the Explain key
+	showChapter bool // topic-wide chapter: one document shared by every exercise in the topic
+	notesTop    int  // viewport line the Learn section starts on, so it can be scrolled to
+	chapterTop  int  // same, for the chapter section below it
 
 	keys     keyMap
 	help     help.Model

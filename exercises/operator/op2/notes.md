@@ -32,6 +32,20 @@ ctrl.NewControllerManagedBy(mgr).
   `Controller: true`. It needs the `*runtime.Scheme` to look the GVK up from the
   Go type, which is why the reconciler carries `mgr.GetScheme()`.
 
+**Under the hood**
+
+- `Owns(Y)` installs a watch on Y with `handler.EnqueueRequestForOwner`, which
+  reads `metav1.GetControllerOf(child)`, checks the resolved GVK against the
+  `For` type, and enqueues the owner's key. Nothing else consults the ownerRef.
+- `SetControllerReference` resolves the owner's GVK through the scheme, so a
+  type missing from the manager's scheme fails here rather than at request time.
+
+**Common mistake**
+
+- Creating the child without a controller reference. Its events map to no
+  request at all, so deleting it is invisible to the controller and the drift is
+  only repaired if something else happens to re-enqueue the parent.
+
 **Key detail:** `SetControllerReference` and `SetOwnerReference` are different.
 An object may have many owner references but at most **one** with
 `Controller: true`; `SetControllerReference` errors if a different controller
@@ -53,6 +67,10 @@ yourself.
 Note the `AlreadyExists` tolerance in the create: reconciles are re-entrant, so
 "someone (probably an earlier me) already made it" is a normal outcome, not a
 failure.
+
+**See also:** op1 (the reconcile these events drive) · op3 (setting the ownerRef inside
+`mutate`) · opt4 (the UID semantics underneath) · the
+[operator chapter](../README.md)
 
 **References**
 

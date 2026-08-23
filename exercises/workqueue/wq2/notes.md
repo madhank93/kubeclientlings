@@ -23,6 +23,21 @@ d3 := rl.When("x") // 4·base
 - `Forget(item)` (wq1) resets that key's counter, so the exponent only grows
   while the key is actually failing.
 
+**Under the hood**
+
+- `ItemExponentialFailureRateLimiter` keeps `map[item]int` of failures behind a
+  mutex. `When` reads the count, computes `baseDelay * 2^n` with an overflow
+  guard, clamps to `maxDelay`, then increments. `Forget` deletes the entry.
+- `AddRateLimited` is literally `AddAfter(item, rl.When(item))`, and `AddAfter`
+  parks the item on a heap-ordered waiting loop until its time arrives.
+
+**Common mistake**
+
+- Reaching for `FastSlow` because the name sounds like backoff. It returns a
+  flat delay for the first N attempts and a different flat delay afterwards, so
+  a permanently broken object retries at a constant rate forever instead of
+  backing away.
+
 **Key detail:** the limiters look interchangeable and are not.
 
 - `NewTypedItemExponentialFailureRateLimiter(base, max)` — doubles per failure.
@@ -39,6 +54,10 @@ The default, `workqueue.DefaultTypedControllerRateLimiter()`, is a `MaxOf` of an
 exponential per-item limiter (5ms → 1000s) and a 10 QPS / 100 burst global
 bucket: per-key backoff *and* an overall ceiling. Unless you have a specific
 reason, use that.
+
+**See also:** wq1 (`Forget`, which resets these counters) · wq3 (the cap that ends the
+retries) · pods3 (`RetryOnConflict`, deliberately flat, and why) · the
+[workqueue chapter](../README.md)
 
 **References**
 
