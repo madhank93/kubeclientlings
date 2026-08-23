@@ -23,6 +23,24 @@ nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListO
 - `List` returns a `*corev1.NodeList`; the objects live in `.Items`, and the
   list itself carries a `ResourceVersion` you will use later for watches.
 
+**Under the hood**
+
+- `NewForConfig` calls `setConfigDefaults` per group: it stamps the
+  `GroupVersion`, sets `APIPath` (`/api` for core, `/apis` for everything else)
+  and installs `scheme.Codecs` as the negotiated serializer. Then one
+  `rest.RESTClient` is built per group/version over a **shared**
+  `http.RoundTripper`.
+- That sharing is why a clientset is cheap to pass around and expensive to
+  duplicate: connection pool, TLS session cache and the client-side rate limiter
+  all live on the transport, so a second clientset is a second of each.
+
+**Common mistake**
+
+- `clientset, _ := kubernetes.NewForConfig(cfg)`. The error here is not
+  ceremonial — it fires on unparseable hosts, bad TLS material and broken exec
+  plugins. Swallowing it converts a clean startup failure into a client that
+  misbehaves somewhere else entirely.
+
 **Key detail:** the two bugs here are the ones that actually happen in real
 code.
 
@@ -33,6 +51,9 @@ code.
    returns an error for a reason (bad TLS material, unparseable host, a broken
    exec-credential plugin), and discarding it converts a clear startup failure
    into a nil-ish client that panics or misbehaves later.
+
+**See also:** setup1 (where the config comes from) · setup3 (tuning it) · pods1 (the first
+thing to do with a clientset) · the [setup chapter](../README.md)
 
 **References**
 

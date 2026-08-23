@@ -27,6 +27,23 @@ pods, err := lister.Pods(ns).List(labels.Everything()) // now safe
   a controller reconciling thousands of times a second never touches the API
   server to *read*.
 
+**Under the hood**
+
+- `Reflector.ListAndWatch` chunks the initial list, pushes each object into the
+  `DeltaFIFO` as a `Sync` delta, then emits a synthetic *replace* so the store
+  matches the snapshot exactly. `HasSynced` returns true once that first
+  `Replace` has been popped and processed.
+- The `Indexer` behind the lister is a `threadSafeStore`: a `map[string]any`
+  plus the index maps, guarded by one `RWMutex`. Reads take the read lock and
+  return the stored pointer — no copy, which is why mutation is forbidden.
+
+**Common mistake**
+
+- Reading from the lister right after `Start`. The call succeeds and returns an
+  empty slice, so the failure looks like "there are no pods" rather than "I
+  asked too early" — and it is timing-dependent, so it passes locally and fails
+  under load.
+
 **Key detail:** `WaitForCacheSync` gives you a **consistent starting point, not
 freshness**. Once synced, the cache is eventually-consistent: it trails the API
 server by however long a watch event takes to arrive. Never do read-modify-write
@@ -43,6 +60,10 @@ Two more rules worth burning in:
   synthetic Update events; it does not re-fetch from the server. `0` disables
   it, which is what modern controllers want — level-triggered reconciliation
   makes the safety net unnecessary.
+
+**See also:** inf2 (handlers, and the same ordering trap) · inf4 (scoping what gets
+cached) · watch2 (the list-then-watch underneath) · pods3 (why you never
+read-modify-write from a lister) · the [informers chapter](../README.md)
 
 **References**
 

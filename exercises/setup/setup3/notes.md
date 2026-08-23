@@ -23,6 +23,23 @@ config.UserAgent = "kubeclientlings/setup3"
   identifies *which* client is responsible. Set it to something that names your
   binary and version.
 
+**Under the hood**
+
+- The limiter is a `flowcontrol.tokenBucketRateLimiter` wrapping
+  `golang.org/x/time/rate`. `rest.Request.Do` calls `tryThrottle` *before*
+  serialising anything, so a throttled request never reaches the transport and
+  never appears in server-side metrics — the latency exists only in your
+  process.
+- `Timeout` is copied onto the `http.Client` built in `rest.HTTPClientFor`, so
+  it bounds the whole exchange including the body read. A watch's body never
+  ends, which is why the timeout kills it exactly on schedule.
+
+**Common mistake**
+
+- Tuning the config *after* `NewForConfig`. The constructor deep-copies, so the
+  clientset keeps the old values and the mutation is a no-op that looks like a
+  fix. Set every field first, then build.
+
 **Key detail:** `Timeout` is a blunt whole-request deadline and it does **not**
 belong on a watch or on any long-poll client — it will tear the stream down on
 schedule. Give informer/watch clients their own untimed config (or a much
@@ -33,6 +50,10 @@ copies the config, so mutating it afterwards changes nothing.
 Newer client-go also honours server-side **API Priority and Fairness**, which
 is why upstream now often recommends raising client QPS well above the old
 defaults and letting the server do the fair queueing.
+
+**See also:** setup2 (the constructor that copies this config) · opt5 (`Limit`, the other
+half of not overloading the apiserver) · watch3 (why watch clients want no
+`Timeout`) · the [setup chapter](../README.md)
 
 **References**
 

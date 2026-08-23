@@ -22,6 +22,21 @@ pods, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
 - Supported operators are only `=`, `==` and `!=`; comma-separated terms are
   ANDed. No set operations, no existence tests.
 
+**Under the hood**
+
+- Field selectors are not evaluated by walking the object. Each resource's
+  registry declares a small set of indexed fields via `GetAttrs` / `Matcher`,
+  and the apiserver rejects anything outside that set at parse time — which is
+  why an unsupported field is a 400 rather than an empty result.
+- Some of those fields back real etcd indexes (`spec.nodeName` on pods is the
+  reason the kubelet's watch is cheap); the rest are evaluated during the scan.
+
+**Common mistake**
+
+- Putting `metadata.name` in `LabelSelector` because both are "just filters".
+  No object carries its name as a label, so you get an empty list and no error —
+  the same shape as a namespace with nothing in it.
+
 **Key detail:** the two behave differently on a typo, and that asymmetry is
 worth internalising. An unsupported *field* selector is a loud 400. An
 unmatched *label* selector is a quiet empty list. When a list comes back
@@ -34,6 +49,10 @@ of the whole cluster, and how you'd write anything node-scoped.
 
 Building them safely: `fields.OneTermEqualSelector("metadata.name", "web-2").String()`,
 or `fields.AndSelectors(...)` for several terms.
+
+**See also:** opt1 (the label axis) · pods2 (label filtering on the same call) · inf4
+(`WithTweakListOptions`, where both axes narrow an informer) · the
+[options chapter](../README.md)
 
 **References**
 

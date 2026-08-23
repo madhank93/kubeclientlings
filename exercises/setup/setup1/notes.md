@@ -23,6 +23,26 @@ config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, ove
   cert / token / exec plugin) into one `*rest.Config` — the credential bundle
   every client-go constructor takes from here on.
 
+**Under the hood**
+
+- `DeferredLoadingClientConfig` holds the rules and overrides and does nothing
+  until asked. `ClientConfig()` then runs `Load()` over each file in the search
+  path and **merges** them: contexts, clusters and users are unioned, and the
+  *first* file to define a given name wins. That is why prepending a file to
+  `$KUBECONFIG` shadows entries later in the list.
+- The merged result is collapsed into `*rest.Config` by resolving the current
+  context to its cluster and user, then translating the auth stanza into
+  transport material — `CertFile`/`KeyData`, `BearerToken`, or an `ExecProvider`
+  that shells out to a credential plugin on first use.
+
+**Common mistake**
+
+- Assuming a loaded config means a *usable* one. Loading succeeds against a
+  kubeconfig whose current-context points at a cluster entry that no longer
+  exists; you get a `*rest.Config` with an empty `Host` and the first request
+  dies dialing nothing. Assert on `config.Host` at startup rather than
+  discovering it four layers down.
+
 **Key detail:** `clientcmd.BuildConfigFromFlags("", path)` is the shortcut you
 see in older examples, and it is *not* the same thing — it takes one explicit
 path and ignores `$KUBECONFIG` entirely. Reach for it only when a user has
@@ -33,6 +53,9 @@ falls back to that.
 `config.Host` being empty is the tell-tale of a config that "loaded" but
 resolved to nothing — worth asserting on, because the failure otherwise
 surfaces much later as a confusing dial error.
+
+**See also:** setup2 (turning this config into a clientset) · setup3 (the fields worth
+setting before you do) · the [setup chapter](../README.md)
 
 **References**
 

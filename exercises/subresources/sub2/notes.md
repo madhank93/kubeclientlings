@@ -26,6 +26,21 @@ _, err = dyn.Resource(gvr).Namespace(ns).UpdateStatus(ctx, got, metav1.UpdateOpt
   half of it discarded. Without the subresource, a controller's status write
   would also carry — and overwrite — whatever `spec` it last read.
 
+**Under the hood**
+
+- Enabling the subresource registers a second storage at `.../status` and makes
+  the main storage's `PrepareForUpdate` copy the *old* status over whatever you
+  sent — and the status storage do the mirror image for spec. The drop is
+  deliberate, not a validation gap.
+- The same hook is what stops `metadata.generation` incrementing on status
+  writes, since generation is bumped only when the prepared spec differs.
+
+**Common mistake**
+
+- Writing `status` through the normal `Update` and reading the 200 as success.
+  Nothing errors, nothing warns, and a `Get` afterwards shows the old value —
+  which reads like a caching problem rather than a wrong endpoint.
+
 **Key detail:** with the status subresource enabled, `metadata.generation` also
 starts behaving properly: it increments **only** on spec changes, never on
 status writes. That is what makes the `generation` vs `observedGeneration`
@@ -48,6 +63,10 @@ _, err := client.UpdateStatus(ctx, obj, metav1.UpdateOptions{})
 Status writes hit the same optimistic-concurrency rules as any Update, so wrap
 them in `retry.RetryOnConflict` (pods3) — status is the field most likely to be
 contended.
+
+**See also:** sub1 (the other subresource) · deploy4 (`observedGeneration`, which this
+makes meaningful) · dyn3 (the CRD being extended) · pods3 (status writes still
+need conflict retry) · the [subresources chapter](../README.md)
 
 **References**
 

@@ -34,6 +34,23 @@ err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{
 - `NewSPDYExecutor` takes the `*rest.Config`, not the clientset: it builds its
   own connection and needs the raw TLS and auth material to do it.
 
+**Under the hood**
+
+- `NewSPDYExecutor` performs an HTTP GET/POST with `Connection: Upgrade` and
+  `Upgrade: SPDY/3.1`. The apiserver proxies the upgraded connection to the
+  kubelet, which multiplexes it into numbered streams — one per channel that was
+  requested, plus an error stream carrying the exit status.
+- Only the channels named in `PodExecOptions` are opened, which is why the local
+  `StreamOptions` writers are a separate decision: they attach to streams that
+  may or may not exist.
+
+**Common mistake**
+
+- Attaching a local `StreamOptions.Stdout` without setting
+  `PodExecOptions.Stdout`. The executor waits on a stream the server never
+  negotiated and the session dies with a bare `Timeout occurred` that names
+  neither. Set both, or neither.
+
 **Key detail:** stdout appears in both structs and they are **not** redundant.
 
 - `PodExecOptions.Stdout` goes on the wire and tells the apiserver *whether to
@@ -73,6 +90,9 @@ people writing interactive shells.
 Newer clusters also support a WebSocket transport
 (`NewWebSocketExecutor`); `NewFallbackExecutor` tries it and falls back to SPDY,
 which is what current `kubectl` does.
+
+**See also:** pods6 (the simpler streaming subresource) · setup1 (the `*rest.Config` the
+executor needs) · the [pods chapter](../README.md)
 
 **References**
 

@@ -23,6 +23,21 @@ factory := informers.NewSharedInformerFactoryWithOptions(cs, 0, informers.WithNa
   `Start` creates one that never runs — another silent hang. Materialise every
   informer first, then `Start`, then `WaitForCacheSync`.
 
+**Under the hood**
+
+- Factory options mutate the `ListWatch` closure the informer is constructed
+  with, so `WithNamespace` changes the URL the `Reflector` requests and
+  `WithTweakListOptions` changes its query parameters. Everything downstream —
+  transfer, decode, cache — shrinks as a consequence.
+- The factory memoises informers in a `map[reflect.Type]SharedIndexInformer`,
+  which is what "shared" means and why the memo is per factory instance.
+
+**Common mistake**
+
+- Calling `factory.Core().V1().Pods().Informer()` after `factory.Start`. The
+  informer is created but never started, so its `HasSynced` stays false forever
+  and `WaitForCacheSync` blocks with no error and no log line.
+
 **Key detail:** "Shared" is the other half of the efficiency story. The factory
 returns *the same* informer for the same GVR, so ten controllers asking for pods
 share one watch and one cache. That only holds within a factory — build a second
@@ -40,6 +55,10 @@ Other narrowing options, which compose:
 The trade-off to be aware of: a scoped informer's lister can only answer
 questions about what it watched. Ask it about another namespace and you get an
 empty result, not an error — same quiet miss as everywhere else in this topic.
+
+**See also:** inf1 (the lifecycle this ordering belongs to) · opt1 (the selectors that
+narrow it) · inf5 (indexes, which have the same before-`Start` rule) · the
+[informers chapter](../README.md)
 
 **References**
 

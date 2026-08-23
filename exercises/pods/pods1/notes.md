@@ -18,6 +18,24 @@ got, err := cs.CoreV1().Pods(ns).Get(ctx, "hello", metav1.GetOptions{})
   `uid`, `resourceVersion`, `creationTimestamp` and all the defaulted spec
   fields filled in. Getting it back proves it round-tripped.
 
+**Under the hood**
+
+- The generated client is a thin wrapper over `rest.Request`: `Pods(ns)` stores
+  the namespace on a `client` struct, and `Create` builds
+  `NamespaceIfScoped(ns, len(ns) > 0).Resource("pods").Body(pod)`. Nothing reads
+  `pod.Namespace` on the way out.
+- Server-side, the request goes through defaulting, validation and admission
+  before storage, which is why the returned object differs from yours: `uid`,
+  `creationTimestamp`, `resourceVersion`, the default service account,
+  `terminationGracePeriodSeconds`, the scheduler name.
+
+**Common mistake**
+
+- Setting `pod.Namespace` and passing `Pods("")`, expecting the object to route
+  itself. It does not: the empty argument builds the cluster-wide collection
+  URL, and POSTing there fails. The namespace argument routes; the field is
+  optional metadata that must not contradict it.
+
 **Key detail:** with `Pods("")` the client builds the cluster-wide path
 `/api/v1/pods`, and POSTing there is not valid — you get an error instead of a
 pod in the default namespace, which is the surprise most people expect. When
@@ -27,6 +45,9 @@ the object is optional; getting the argument right is not.
 
 `Pods("")` **is** meaningful for reads: `Pods("").List(...)` is `kubectl get
 pods --all-namespaces`. Read across all namespaces, write into one.
+
+**See also:** pods2 (filtering the collection URL) · setup2 (where `cs` comes from) ·
+dyn1 (the same URL, addressed by hand) · the [pods chapter](../README.md)
 
 **References**
 

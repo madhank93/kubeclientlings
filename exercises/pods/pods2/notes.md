@@ -21,6 +21,23 @@ webPods, err := cs.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
   or `labels.SelectorFromSet(...)` in real code — it escapes values properly
   instead of relying on `fmt.Sprintf`.
 
+**Under the hood**
+
+- `ListOptions` is encoded by `VersionedParams` into query parameters, so
+  `LabelSelector` arrives as `?labelSelector=app%3Dweb`. The apiserver parses it
+  with the same `labels` package you have locally, then evaluates it against the
+  watch cache or etcd before serialising anything.
+- Because the filtering happens before serialisation, a selective list costs the
+  server almost nothing extra — the expensive part of a `List` is
+  materialising and encoding objects, not finding them.
+
+**Common mistake**
+
+- Listing everything and filtering in Go, usually because the selector "didn't
+  work". A selector that matches nothing returns an empty list, never an error,
+  so a typo looks exactly like an empty namespace — and the fix people reach for
+  is the one that hurts the cluster.
+
 **Key detail:** `FieldSelector` is the other half of this and is **not**
 interchangeable. Field selectors work on object fields (`metadata.name`,
 `status.phase`, `spec.nodeName`) but only on fields the server has explicitly
@@ -31,6 +48,10 @@ something arbitrary, put a label on it.
 Also note `List` is a point-in-time snapshot with a `ResourceVersion` on the
 list itself. That version is what you hand to a `Watch` to resume without a gap
 — which is exactly what informers do internally.
+
+**See also:** opt1 (building selectors through the `labels` package) · opt2 (the other
+filtering axis) · opt5 (bounding a large list) · the
+[pods chapter](../README.md)
 
 **References**
 

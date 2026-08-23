@@ -31,6 +31,22 @@ The pipeline has three pieces and the middle one is easy to forget:
 machine-readable token (`Scheduled`, `FailedMount`) that people alert on, so keep
 it stable; `message` is the human sentence. `Eventf` takes a format string.
 
+**Under the hood**
+
+- `NewBroadcaster` starts a `watch.Broadcaster` goroutine with a bounded queue.
+  `recorder.Event` builds the `corev1.Event`, stamps `involvedObject` from the
+  scheme lookup, and pushes it onto that queue — the POST happens on the
+  broadcaster's goroutine, not yours.
+- The sink is wrapped in `EventCorrelator`, which aggregates by
+  `(involvedObject, reason, message)` and rate-limits per object, so repeated
+  events become one object with a rising `count`.
+
+**Common mistake**
+
+- Calling `NewRecorder` without `StartRecordingToSink`. The broadcaster has no
+  consumers, so every event is accepted and dropped — no error, no log, nothing
+  in `kubectl get events`, and no clue where to look.
+
 **Key detail:** emission is **asynchronous**. `recorder.Event` returns
 immediately and the broadcaster's goroutine does the POST, which is why the
 exercise has to poll for the event to show up — and why `defer
@@ -45,6 +61,10 @@ rather than a bug.
 
 Events are stored with a TTL (one hour by default) — they are a debugging aid,
 not an audit log. Never build logic that depends on reading them back.
+
+**See also:** wq3 (surfacing a dropped key to humans) · ctrl2 (the reconcile loop that
+would emit these) · pods5 (the API error vocabulary worth reporting) · the
+[watch chapter](../README.md)
 
 **References**
 

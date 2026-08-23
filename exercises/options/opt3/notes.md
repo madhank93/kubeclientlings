@@ -22,6 +22,22 @@ applied, err := cs.CoreV1().Pods(ns).Apply(ctx, pod, metav1.ApplyOptions{
   "I don't care about replicas" versus "replicas should be 0", and apply would
   read your zero values as a claim of ownership over those fields.
 
+**Under the hood**
+
+- Apply is a `PATCH` with content type `application/apply-patch+yaml`. The
+  server converts the incoming partial object into a typed field set, merges it
+  with `structured-merge-diff`, and rewrites `metadata.managedFields` with one
+  entry per manager naming the exact field paths it owns.
+- Ownership is per *leaf path*, not per object, which is what lets two managers
+  hold different keys inside the same map without either noticing the other.
+
+**Common mistake**
+
+- Sending a plain `corev1.Pod` instead of an apply configuration. Go zero values
+  are indistinguishable from unset in that type, so the server reads them as a
+  claim over every field — and your manager quietly becomes the owner of things
+  it never meant to touch.
+
 **Key detail:** field ownership is also how apply **removes** things. If your
 manager previously set a field and your next apply omits it, the server sees
 that you released it and deletes the value. That's declarative behaviour you do
@@ -36,6 +52,10 @@ Conflicts: if another manager owns a field you're setting, the apply fails with
 a 409 listing the conflicts. `Force: true` in `ApplyOptions` takes ownership
 anyway — appropriate for a controller that is the authority on those fields,
 and a footgun everywhere else.
+
+**See also:** ssa1 (the same mechanism, in depth) · ssa2 (what happens when two managers
+disagree) · pods4 (the patch types apply sits alongside) · the
+[options chapter](../README.md)
 
 **References**
 

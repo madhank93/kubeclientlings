@@ -94,3 +94,25 @@ echo '✓ up to date. Your progress in .kubeclientlings-state.json was never tou
 [tasks.release-check]
 description = "Validate the goreleaser config and build a local snapshot"
 run = "goreleaser check && goreleaser build --snapshot --clean --single-target"
+
+[tasks.gen-site]
+description = "Generate docs site content from info.toml + READMEs"
+run = "go run ./web/gen"
+
+[tasks.site]
+description = "Generate content and run the docs dev server"
+depends = ["gen-site"]
+dir = "{{config_root}}/web"
+run = "npm install && npm run dev"
+
+[tasks.site-build]
+description = "Generate content and build the docs site"
+depends = ["gen-site"]
+dir = "{{config_root}}/web"
+run = "npm ci && npm run build"
+
+[tasks.check-diagrams]
+description = "Parse every mermaid diagram in the generated chapters"
+depends = ["gen-site"]
+dir = "{{config_root}}/web"
+run = "npm install --silent && node scripts/check-mermaid.mjs"
