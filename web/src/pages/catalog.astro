@@ -66,6 +66,7 @@ for (const [slug, t] of Object.entries(TOPICS)) {
       <label class="fl" for="searchBox">Search</label>
       <input id="searchBox" type="search" placeholder="name, topic, description…" autocomplete="off" spellcheck="false" />
     </div>
+    <button class="pill" id="foldAll" aria-label="Collapse every topic">Collapse all</button>
     <span class="rc" id="rc">{total} of {total}</span>
   </div>
 
@@ -88,17 +89,26 @@ for (const [slug, t] of Object.entries(TOPICS)) {
               last = e.topic;
               rows.push(
                 <tr class="topic-row" data-topic={e.topic} data-label={t.label}
-                    data-tier={t.tier} data-learn={t.learn} tabindex="0" role="button" aria-expanded="false">
+                    data-tier={t.tier} data-learn={t.learn} tabindex="0" role="button" aria-expanded="true">
                   <td colspan="3">
+                    <span class="texp" aria-hidden="true">▾</span>
                     <span class="tdot" style={`background:${t.color}`}></span>
                     {t.label}
                     <span class="ttier">{t.tier}</span>
                     <span class="tcount">{countFor(e.topic)} exercise{countFor(e.topic) === 1 ? '' : 's'}</span>
-                    <span class="texp">▸</span>
-                    <span class="tchapter" role="button" tabindex="0">Read the chapter →</span>
                   </td>
                 </tr>
               );
+              if (t.learn) {
+                rows.push(
+                  <tr class="primer-row" data-topic={e.topic} data-label={t.label}
+                      data-search={`${e.topic} ${t.label} primer chapter ${t.learn}`.toLowerCase()}>
+                    <td class="c-topic"><span class="tchip" style={`background:${t.color}`}>{t.label}</span></td>
+                    <td><span class="slug primer-slug">Chapter</span></td>
+                    <td class="dsc">{t.learn}<span class="exp">▸</span></td>
+                  </tr>
+                );
+              }
             }
             const search = `${e.slug} ${e.topic} ${t.label} ${e.description}`.toLowerCase();
             rows.push(
@@ -121,12 +131,7 @@ for (const [slug, t] of Object.entries(TOPICS)) {
   <!-- Floating "what this topic teaches" panel. Fixed-positioned so it shows
        even when its topic header row is pinned by position:sticky (an inline
        detail row would be scrolled off with the header's natural box). -->
-  <div id="topicPop" class="topic-pop" hidden role="dialog" aria-label="Topic details">
-    <button class="topic-pop-x" id="topicPopX" aria-label="Close">✕</button>
-    <h3 id="topicPopTitle"></h3>
-    <p id="topicPopLearn"></p>
-    <button class="topic-pop-more" id="topicPopChapter">Read the chapter →</button>
-  </div>
+  
 
   <dialog id="catModal" class="cat-modal" aria-labelledby="mTitle">
     <article>
@@ -235,27 +240,19 @@ for (const [slug, t] of Object.entries(TOPICS)) {
     .ttier { margin-left: 0.6rem; font-weight: 400; color: var(--sl-color-gray-3); text-transform: none; letter-spacing: 0; }
     .tcount { margin-left: 0.6rem; font-weight: 400; color: var(--sl-color-gray-3); text-transform: none; letter-spacing: 0; }
     .texp { float: right; color: var(--sl-color-gray-3); transition: transform 0.12s; }
-    .topic-row[aria-expanded="true"] .texp { transform: rotate(90deg); color: var(--sl-color-accent-high); }
-    .tchapter { margin-left: 0.6rem; font-weight: 400; text-transform: none; letter-spacing: 0;
-      color: var(--sl-color-accent-high); cursor: pointer; }
-    .tchapter:hover, .tchapter:focus-visible { text-decoration: underline; }
+    .topic-row[aria-expanded="false"] .texp { transform: rotate(-90deg); }
 
-    .topic-pop { position: fixed; z-index: 5; box-sizing: border-box;
-      background: var(--sl-color-bg); border: 1px solid var(--sl-color-accent);
-      border-radius: 0.5rem; box-shadow: 0 12px 32px rgb(0 0 0 / 0.4);
-      padding: 0.75rem 2.2rem 0.85rem 0.9rem;
-      /* The popover holds the whole topic README — cap and scroll. */
-      max-height: min(22rem, 55vh); overflow-y: auto; }
-    .topic-pop h3 { margin: 0 0 0.35rem; font-size: 0.8rem; text-transform: uppercase;
-      letter-spacing: 0.05em; color: var(--sl-color-accent-high); }
-    .topic-pop p { margin: 0; font-size: 0.84rem; color: var(--sl-color-gray-1); line-height: 1.6; }
-    .topic-pop code { font-size: 0.78rem; }
-    .topic-pop-x { position: absolute; top: 0.5rem; right: 0.6rem; background: none; border: 0;
-      color: var(--sl-color-gray-3); font-size: 0.9rem; cursor: pointer; line-height: 1; padding: 0.2rem; }
-    .topic-pop-x:hover { color: var(--sl-color-white); }
-    .topic-pop-more { margin-top: 0.7rem; background: none; border: 0; padding: 0; cursor: pointer;
-      font-size: 0.84rem; font-weight: 600; color: var(--sl-color-accent-high); }
-    .topic-pop-more:hover { text-decoration: underline; }
+    .primer-row { cursor: pointer; }
+    .primer-row td { background: color-mix(in oklab, var(--sl-color-accent) 5%, transparent); }
+    .primer-row:hover td { background: color-mix(in oklab, var(--sl-color-accent) 12%, transparent); }
+    .primer-row:focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: -2px; }
+    .primer-row .primer-slug { color: var(--sl-color-accent-high); font-weight: 600; }
+    /* One line, ellipsised. The lede is the chapter's opening sentence and the
+       chapter itself is one click away, so a row that grows to fit it earns
+       nothing. */
+    .primer-row .dsc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 0; line-height: 1.45; }
+
     .cat-modal article.chapter-only .m-run,
     .cat-modal article.chapter-only .m-links,
     .cat-modal article.chapter-only .m-desc,
@@ -352,6 +349,10 @@ for (const [slug, t] of Object.entries(TOPICS)) {
     const topicSel = document.getElementById('topicSel') as HTMLSelectElement;
     const exRows = Array.from(body.querySelectorAll<HTMLTableRowElement>('tr.ex-row'));
     const topicRows = Array.from(body.querySelectorAll<HTMLTableRowElement>('tr.topic-row'));
+    const primerRows = Array.from(body.querySelectorAll<HTMLTableRowElement>('tr.primer-row'));
+    const foldAll = document.getElementById('foldAll') as HTMLButtonElement;
+    // Topics folded shut by the reader.
+    const collapsed = new Set<string>();
     const total = exRows.length;
 
     // The filter bar wraps at narrow widths, so its height can't be a constant —
@@ -371,97 +372,80 @@ for (const [slug, t] of Object.entries(TOPICS)) {
     function apply() {
       const q = search.value.toLowerCase().trim();
       const topic = topicSel.value;
+      // A search overrides the fold, so a query never reports "no results" for
+      // rows that are merely collapsed.
+      const folded = (t?: string) => !q && !!t && collapsed.has(t);
       let shown = 0;
+      const matched = new Set<string>();
       exRows.forEach((row) => {
         const topicOk = topic === 'all' || row.dataset.topic === topic;
         const qOk = !q || (row.dataset.search || '').includes(q);
         const ok = topicOk && qOk;
-        row.hidden = !ok;
-        if (ok) shown++;
+        // Collapsed rows still count as matches; folding is a view, not a filter.
+        row.hidden = !ok || folded(row.dataset.topic);
+        if (ok) { shown++; matched.add(row.dataset.topic!); }
+      });
+      primerRows.forEach((tr) => {
+        const topicOk = topic === 'all' || tr.dataset.topic === topic;
+        const qOk = !q || (tr.dataset.search || '').includes(q);
+        const ok = topicOk && qOk;
+        tr.hidden = !ok || folded(tr.dataset.topic);
+        if (ok) matched.add(tr.dataset.topic!);
       });
       topicRows.forEach((tr) => {
-        const t = tr.dataset.topic;
-        const any = exRows.some((r) => r.dataset.topic === t && !r.hidden);
-        tr.hidden = !any;
-        if (!any && tr.getAttribute('aria-expanded') === 'true') closeTopicPop();
+        const t = tr.dataset.topic!;
+        tr.hidden = !matched.has(t);
+        tr.setAttribute('aria-expanded', String(!folded(t)));
       });
+      const allFolded = topicRows.every((tr) => collapsed.has(tr.dataset.topic!));
+      foldAll.textContent = allFolded ? 'Expand all' : 'Collapse all';
+      foldAll.setAttribute('aria-label', allFolded ? 'Expand every topic' : 'Collapse every topic');
       rc.textContent = `${shown} of ${total}`;
       empty.hidden = shown !== 0;
     }
-
-    // ---- topic narrative popover ----
-    // A floating panel rather than an inline row, so it stays visible when the
-    // clicked topic header is pinned by position:sticky.
-    const topicPop = document.getElementById('topicPop')!;
-    const topicPopTitle = document.getElementById('topicPopTitle')!;
-    const topicPopLearn = document.getElementById('topicPopLearn')!;
-    let topicPopOwner: HTMLTableRowElement | null = null;
 
     const withCode = (s: string) =>
       s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\n\n/g, '<br><br>'); // README paragraphs
 
-    function positionTopicPop(tr: HTMLTableRowElement) {
-      // The sticky rule is on the <td>, so the <tr> keeps its natural (possibly
-      // off-screen) box — measure the cell that's actually pinned on screen.
-      const cell = tr.querySelector('td') ?? tr;
-      const r = cell.getBoundingClientRect();
-      topicPop.style.top = `${r.bottom + 4}px`;
-      topicPop.style.left = `${r.left}px`;
-      topicPop.style.width = `${r.width}px`;
-    }
-    function closeTopicPop() {
-      topicPop.hidden = true;
-      if (topicPopOwner) topicPopOwner.setAttribute('aria-expanded', 'false');
-      topicPopOwner = null;
-    }
-    function openTopicPop(tr: HTMLTableRowElement) {
-      topicPopTitle.textContent = `${tr.dataset.label} — ${tr.dataset.tier}`;
-      topicPopLearn.innerHTML = tr.dataset.learn
-        ? `<b>You learn:</b> ${withCode(tr.dataset.learn)}`
-        : 'No topic notes yet.';
-      positionTopicPop(tr);
-      topicPop.hidden = false;
-      topicPopOwner = tr;
-      tr.setAttribute('aria-expanded', 'true');
-    }
     function openChapterFor(tr: HTMLElement) {
-      const color = (tr.querySelector('.tdot') as HTMLElement)?.style.background || '';
       const topic = tr.dataset.topic!;
-      closeTopicPop();
-      openChapter(topic, tr.dataset.label || topic, color);
+      const header = document.querySelector(`.topic-row[data-topic="${topic}"] .tdot`) as HTMLElement | null;
+      openChapter(topic, tr.dataset.label || topic, header?.style.background || '');
     }
     topicRows.forEach((tr) => {
-      const toggle = () => (topicPopOwner === tr ? closeTopicPop() : openTopicPop(tr));
-      const cue = tr.querySelector<HTMLElement>('.tchapter');
-      // Pull mermaid in on intent, not on open: the parse alone is ~150ms.
-      cue?.addEventListener('pointerenter', () => { mermaidLib(); }, { once: true });
-      cue?.addEventListener('click', (e) => { e.stopPropagation(); openChapterFor(tr); });
-      cue?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openChapterFor(tr); }
-      });
+      const t = tr.dataset.topic!;
+      const toggle = () => {
+        if (collapsed.has(t)) collapsed.delete(t);
+        else collapsed.add(t);
+        apply();
+      };
       tr.addEventListener('click', toggle);
       tr.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
       });
     });
-    document.getElementById('topicPopChapter')!.addEventListener('click', () => {
-      if (topicPopOwner) openChapterFor(topicPopOwner);
-    });
-    document.getElementById('topicPopX')!.addEventListener('click', closeTopicPop);
-    // Reposition while pinned; dismiss on outside click / Escape.
-    window.addEventListener('scroll', () => { if (topicPopOwner) positionTopicPop(topicPopOwner); }, { passive: true });
-    window.addEventListener('resize', () => { if (topicPopOwner) positionTopicPop(topicPopOwner); });
-    document.addEventListener('click', (e) => {
-      if (!topicPopOwner) return;
-      const t = e.target as Node;
-      if (!topicPop.contains(t) && !topicPopOwner.contains(t)) closeTopicPop();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && topicPopOwner) closeTopicPop();
+
+    // The chapter is opened from its own row now, where the reader is choosing
+    // an exercise rather than hunting the header for a cue.
+    primerRows.forEach((tr) => {
+      tr.tabIndex = 0;
+      tr.setAttribute('role', 'button');
+      // Pull mermaid in on intent, not on open: the parse alone is ~150ms.
+      tr.addEventListener('pointerenter', () => { mermaidLib(); }, { once: true });
+      tr.addEventListener('click', () => openChapterFor(tr));
+      tr.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openChapterFor(tr); }
+      });
     });
 
+    foldAll.addEventListener('click', () => {
+      const allFolded = topicRows.every((tr) => collapsed.has(tr.dataset.topic!));
+      collapsed.clear();
+      if (!allFolded) topicRows.forEach((tr) => collapsed.add(tr.dataset.topic!));
+      apply();
+    });
     // ---- modal ----
     const modal = document.getElementById('catModal') as HTMLDialogElement;
     const mTopic = document.getElementById('mTopic')!;
