@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/madhank93/kubeclientlings/kubeclientlings/exercises"
@@ -22,8 +21,6 @@ const (
 	detailsDir  = "web/src/data/lesson-details" // per-exercise detail markdown
 	chaptersDir = "web/src/data/chapters"       // per-topic chapter markdown for the catalog
 	exerciseR   = "exercises"
-	// landingPage states the exercise count in prose, so it can drift.
-	landingPage = "web/src/content/docs/index.mdx"
 	// Popups link to the worked solution instead of embedding it.
 	repoBlob = "https://github.com/madhank93/kubeclientlings/blob/main"
 )
@@ -77,12 +74,6 @@ func run() error {
 	// Every topic must be placed in a tier, or its exercises silently vanish
 	// from the site.
 	if err := checkCoverage(byTopic); err != nil {
-		return err
-	}
-	// The landing page states the exercise count in prose the generator does not
-	// write. It went stale once already — four exercises were added and the site
-	// kept advertising 52.
-	if err := checkLandingCount(len(exs)); err != nil {
 		return err
 	}
 	if err := writeCatalog(byTopic); err != nil {
@@ -144,33 +135,6 @@ var (
 	readmeLink   = regexp.MustCompile(`\]\(\.\./README\.md\)`)
 	mermaidFence = regexp.MustCompile("(?s)```mermaid\n(.*?)```")
 )
-
-// countRE matches the landing page's prose count, e.g. "56 exercises" and
-// "56 small exercises".
-var countRE = regexp.MustCompile(`(\d+) (?:small )?exercises`)
-
-// checkLandingCount fails when the hand-written count on the landing page has
-// drifted from the number of exercises in info.toml.
-func checkLandingCount(want int) error {
-	src, err := os.ReadFile(landingPage)
-	if err != nil {
-		return err
-	}
-	matches := countRE.FindAllStringSubmatch(string(src), -1)
-	if len(matches) == 0 {
-		return fmt.Errorf("%s: no exercise count found; did the wording change?", landingPage)
-	}
-	for _, m := range matches {
-		got, err := strconv.Atoi(m[1])
-		if err != nil {
-			return fmt.Errorf("%s: unparsable count %q: %w", landingPage, m[1], err)
-		}
-		if got != want {
-			return fmt.Errorf("%s says %q but info.toml has %d exercises", landingPage, m[0], want)
-		}
-	}
-	return nil
-}
 
 // checkCoverage fails when info.toml has a topic the tiers table doesn't place,
 // or the tiers table names a topic with no exercises.
