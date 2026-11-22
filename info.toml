@@ -369,6 +369,79 @@ import typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1":
     })"""
 
 [[exercises]]
+name = "dyn1"
+path = "exercises/dynamic/dyn1/main.go"
+mode = "compile"
+hint = """
+The dynamic client builds request URLs from the GVR's Resource field, and
+that is the lowercase PLURAL ("pods"), never the Kind ("Pod"). The server
+has no /api/v1/namespaces/<ns>/Pod endpoint:
+
+    gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+
+Group is empty for core/v1 resources — they live under /api, not /apis."""
+
+[[exercises]]
+name = "dyn2"
+path = "exercises/dynamic/dyn2/main.go"
+mode = "compile"
+hint = """
+Nested helpers need EVERY key on the path, top to bottom. A ConfigMap's
+values live under .data, so "message" alone finds nothing:
+
+    msg, found, err := unstructured.NestedString(u.Object, "data", "message")
+
+found=false means the path is wrong (or empty), not that an error occurred."""
+
+[[exercises]]
+name = "dyn3"
+path = "exercises/dynamic/dyn3/main.go"
+mode = "compile"
+timeout = 240
+hint = """
+The GVR version must match a version the CRD actually serves. This CRD's
+spec.versions has exactly one: v1alpha1 (served=true). "v1" 404s as if the
+resource never existed. Fix both the GVR and the object's apiVersion:
+
+    gvr := schema.GroupVersionResource{Group: "kubeclientlings.dev", Version: "v1alpha1", Resource: "widgets"}
+    // ... "apiVersion": "kubeclientlings.dev/v1alpha1""""
+
+[[exercises]]
+name = "dyn4"
+path = "exercises/dynamic/dyn4/main.go"
+mode = "compile"
+hint = """
+apps/v1beta1 was removed in Kubernetes 1.16 — discovery returns an error,
+not an empty list. Deployments live in apps/v1 today:
+
+    resources, err := disco.ServerResourcesForGroupVersion("apps/v1")
+
+Never hardcode a dead groupVersion; discovery is how clients find live ones."""
+
+[[exercises]]
+name = "crd1"
+path = "exercises/crds/crd1/main.go"
+mode = "compile"
+hint = """
+The converter maps fields by their json tag. The unstructured object has a
+"size" key, so the struct tag must be "size", not "sizes":
+
+    Size int64 `json:"size"`"""
+
+[[exercises]]
+name = "crd2"
+path = "exercises/crds/crd2/main.go"
+mode = "compile"
+hint = """
+The dynamic client routes on apiVersion + kind, which come from TypeMeta.
+Set it on the struct so the converted object carries them:
+
+    w := Widget{
+        TypeMeta: metav1.TypeMeta{APIVersion: "kubeclientlings.dev/v1alpha1", Kind: "Widget"},
+        ...
+    }"""
+
+[[exercises]]
 name = "inf1"
 path = "exercises/informers/inf1/main.go"
 mode = "compile"
@@ -443,54 +516,42 @@ returning nil files it under none. Note the lookup gives you (empty slice,
 nil error) when nothing matches, so assert on the length."""
 
 [[exercises]]
-name = "dyn1"
-path = "exercises/dynamic/dyn1/main.go"
+name = "wq1"
+path = "exercises/workqueue/wq1/main.go"
 mode = "compile"
 hint = """
-The dynamic client builds request URLs from the GVR's Resource field, and
-that is the lowercase PLURAL ("pods"), never the Kind ("Pod"). The server
-has no /api/v1/namespaces/<ns>/Pod endpoint:
+Done releases an item from processing; it does nothing to the retry history,
+so NumRequeues stays at 3. Forget is what clears backoff — a successful
+reconcile calls it:
 
-    gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
-
-Group is empty for core/v1 resources — they live under /api, not /apis."""
+    q.Forget("a")"""
 
 [[exercises]]
-name = "dyn2"
-path = "exercises/dynamic/dyn2/main.go"
+name = "wq2"
+path = "exercises/workqueue/wq2/main.go"
 mode = "compile"
 hint = """
-Nested helpers need EVERY key on the path, top to bottom. A ConfigMap's
-values live under .data, so "message" alone finds nothing:
+The fast-slow limiter returns a flat delay, not a growing one. For delays
+that double every failure (base, 2·base, 4·base…) use the exponential
+limiter:
 
-    msg, found, err := unstructured.NestedString(u.Object, "data", "message")
-
-found=false means the path is wrong (or empty), not that an error occurred."""
+    rl := workqueue.NewTypedItemExponentialFailureRateLimiter[string](base, max)"""
 
 [[exercises]]
-name = "dyn3"
-path = "exercises/dynamic/dyn3/main.go"
-mode = "compile"
-timeout = 240
-hint = """
-The GVR version must match a version the CRD actually serves. This CRD's
-spec.versions has exactly one: v1alpha1 (served=true). "v1" 404s as if the
-resource never existed. Fix both the GVR and the object's apiVersion:
-
-    gvr := schema.GroupVersionResource{Group: "kubeclientlings.dev", Version: "v1alpha1", Resource: "widgets"}
-    // ... "apiVersion": "kubeclientlings.dev/v1alpha1""""
-
-[[exercises]]
-name = "dyn4"
-path = "exercises/dynamic/dyn4/main.go"
+name = "wq3"
+path = "exercises/workqueue/wq3/main.go"
 mode = "compile"
 hint = """
-apps/v1beta1 was removed in Kubernetes 1.16 — discovery returns an error,
-not an empty list. Deployments live in apps/v1 today:
+An unconditional AddRateLimited requeues a poison item forever. Cap the
+retries and Forget past the cap:
 
-    resources, err := disco.ServerResourcesForGroupVersion("apps/v1")
-
-Never hardcode a dead groupVersion; discovery is how clients find live ones."""
+    handleErr := func(key string) {
+        if q.NumRequeues(key) < maxRetries {
+            q.AddRateLimited(key)
+            return
+        }
+        q.Forget(key)
+    }"""
 
 [[exercises]]
 name = "ctrl1"
@@ -534,151 +595,6 @@ rejects it. Make the lease outlive the renew attempts:
     LeaseDuration:   15 * time.Second,
     RenewDeadline:   10 * time.Second,
     RetryPeriod:     2 * time.Second,"""
-
-[[exercises]]
-name = "op1"
-path = "exercises/operator/op1/main.go"
-mode = "compile"
-hint = """
-Two fixes, one lesson — the Reconcile contract:
-
-1. The request already carries the full key. Fetch with it:
-
-       if err := r.Get(ctx, req.NamespacedName, &cm); err != nil {
-
-2. NotFound is not a failure — the object was deleted and the work is
-   simply gone. Swallow it and report success (apierrors is
-   k8s.io/apimachinery/pkg/api/errors):
-
-       if apierrors.IsNotFound(err) {
-           return ctrl.Result{}, nil
-       }
-       r.errs.Add(1)
-       return ctrl.Result{}, err"""
-
-[[exercises]]
-name = "op2"
-path = "exercises/operator/op2/main.go"
-mode = "compile"
-hint = """
-Owns(&corev1.Secret{}) maps a child event back to its owner by reading the
-child's controller ownerRef — a bare child is invisible to it. Stamp the ref
-before creating (controllerutil is sigs.k8s.io/controller-runtime/pkg/controller/controllerutil):
-
-    if err := controllerutil.SetControllerReference(&parent, child, r.scheme); err != nil {
-        return ctrl.Result{}, err
-    }
-    if err := r.Create(ctx, child); err != nil && !apierrors.IsAlreadyExists(err) {"""
-
-[[exercises]]
-name = "op3"
-path = "exercises/operator/op3/main.go"
-mode = "compile"
-hint = """
-CreateOrUpdate GETS the live object into cm before your mutate fn runs, so
-anything set on cm beforehand is wiped on the update path. Desired state
-belongs INSIDE mutate — it runs on both the create and the update path:
-
-    _, err := controllerutil.CreateOrUpdate(ctx, r.Client, cm, func() error {
-        if cm.Data == nil {
-            cm.Data = map[string]string{}
-        }
-        cm.Data["replicas"] = strconv.Itoa(int(*dep.Spec.Replicas))
-        return controllerutil.SetControllerReference(&dep, cm, r.scheme)
-    })"""
-
-[[exercises]]
-name = "wq1"
-path = "exercises/workqueue/wq1/main.go"
-mode = "compile"
-hint = """
-Done releases an item from processing; it does nothing to the retry history,
-so NumRequeues stays at 3. Forget is what clears backoff — a successful
-reconcile calls it:
-
-    q.Forget("a")"""
-
-[[exercises]]
-name = "wq2"
-path = "exercises/workqueue/wq2/main.go"
-mode = "compile"
-hint = """
-The fast-slow limiter returns a flat delay, not a growing one. For delays
-that double every failure (base, 2·base, 4·base…) use the exponential
-limiter:
-
-    rl := workqueue.NewTypedItemExponentialFailureRateLimiter[string](base, max)"""
-
-[[exercises]]
-name = "wq3"
-path = "exercises/workqueue/wq3/main.go"
-mode = "compile"
-hint = """
-An unconditional AddRateLimited requeues a poison item forever. Cap the
-retries and Forget past the cap:
-
-    handleErr := func(key string) {
-        if q.NumRequeues(key) < maxRetries {
-            q.AddRateLimited(key)
-            return
-        }
-        q.Forget(key)
-    }"""
-
-[[exercises]]
-name = "test1"
-path = "exercises/testing/test1/main.go"
-mode = "compile"
-hint = """
-The fake tracker keys objects by namespace AND name. The pod was seeded in
-"demo", so get it from "demo", not "default":
-
-    got, err := cs.CoreV1().Pods("demo").Get(ctx, "seeded", metav1.GetOptions{})"""
-
-[[exercises]]
-name = "test2"
-path = "exercises/testing/test2/main.go"
-mode = "compile"
-hint = """
-A reactor only fires when its verb matches the call. The call is a Create,
-so register the reactor for "create", not "update":
-
-    cs.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-        return true, nil, apierrors.NewInternalError(fmt.Errorf("etcd unavailable"))
-    })"""
-
-[[exercises]]
-name = "test3"
-path = "exercises/testing/test3/main.go"
-mode = "compile"
-hint = """
-Matches(verb, resource) must name the verb you actually called. The action
-was a Create, so:
-
-    actions[0].Matches("create", "configmaps")"""
-
-[[exercises]]
-name = "crd1"
-path = "exercises/crds/crd1/main.go"
-mode = "compile"
-hint = """
-The converter maps fields by their json tag. The unstructured object has a
-"size" key, so the struct tag must be "size", not "sizes":
-
-    Size int64 `json:"size"`"""
-
-[[exercises]]
-name = "crd2"
-path = "exercises/crds/crd2/main.go"
-mode = "compile"
-hint = """
-The dynamic client routes on apiVersion + kind, which come from TypeMeta.
-Set it on the struct so the converted object carries them:
-
-    w := Widget{
-        TypeMeta: metav1.TypeMeta{APIVersion: "kubeclientlings.dev/v1alpha1", Kind: "Widget"},
-        ...
-    }"""
 
 [[exercises]]
 name = "ssa1"
@@ -765,3 +681,87 @@ PatchType (it is a *PatchType, so take the address):
 
     pt := admissionv1.PatchTypeJSONPatch
     resp.PatchType = &pt"""
+
+[[exercises]]
+name = "test1"
+path = "exercises/testing/test1/main.go"
+mode = "compile"
+hint = """
+The fake tracker keys objects by namespace AND name. The pod was seeded in
+"demo", so get it from "demo", not "default":
+
+    got, err := cs.CoreV1().Pods("demo").Get(ctx, "seeded", metav1.GetOptions{})"""
+
+[[exercises]]
+name = "test2"
+path = "exercises/testing/test2/main.go"
+mode = "compile"
+hint = """
+A reactor only fires when its verb matches the call. The call is a Create,
+so register the reactor for "create", not "update":
+
+    cs.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+        return true, nil, apierrors.NewInternalError(fmt.Errorf("etcd unavailable"))
+    })"""
+
+[[exercises]]
+name = "test3"
+path = "exercises/testing/test3/main.go"
+mode = "compile"
+hint = """
+Matches(verb, resource) must name the verb you actually called. The action
+was a Create, so:
+
+    actions[0].Matches("create", "configmaps")"""
+
+[[exercises]]
+name = "op1"
+path = "exercises/operator/op1/main.go"
+mode = "compile"
+hint = """
+Two fixes, one lesson — the Reconcile contract:
+
+1. The request already carries the full key. Fetch with it:
+
+       if err := r.Get(ctx, req.NamespacedName, &cm); err != nil {
+
+2. NotFound is not a failure — the object was deleted and the work is
+   simply gone. Swallow it and report success (apierrors is
+   k8s.io/apimachinery/pkg/api/errors):
+
+       if apierrors.IsNotFound(err) {
+           return ctrl.Result{}, nil
+       }
+       r.errs.Add(1)
+       return ctrl.Result{}, err"""
+
+[[exercises]]
+name = "op2"
+path = "exercises/operator/op2/main.go"
+mode = "compile"
+hint = """
+Owns(&corev1.Secret{}) maps a child event back to its owner by reading the
+child's controller ownerRef — a bare child is invisible to it. Stamp the ref
+before creating (controllerutil is sigs.k8s.io/controller-runtime/pkg/controller/controllerutil):
+
+    if err := controllerutil.SetControllerReference(&parent, child, r.scheme); err != nil {
+        return ctrl.Result{}, err
+    }
+    if err := r.Create(ctx, child); err != nil && !apierrors.IsAlreadyExists(err) {"""
+
+[[exercises]]
+name = "op3"
+path = "exercises/operator/op3/main.go"
+mode = "compile"
+hint = """
+CreateOrUpdate GETS the live object into cm before your mutate fn runs, so
+anything set on cm beforehand is wiped on the update path. Desired state
+belongs INSIDE mutate — it runs on both the create and the update path:
+
+    _, err := controllerutil.CreateOrUpdate(ctx, r.Client, cm, func() error {
+        if cm.Data == nil {
+            cm.Data = map[string]string{}
+        }
+        cm.Data["replicas"] = strconv.Itoa(int(*dep.Spec.Replicas))
+        return controllerutil.SetControllerReference(&dep, cm, r.scheme)
+    })"""
