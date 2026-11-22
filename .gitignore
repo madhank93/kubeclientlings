@@ -21,3 +21,6 @@ web/.astro/
 
 # local TUI progress
 .kubeclientlings-state.json
+
+# `go build` of an exercise from the repo root drops a binary named after it
+/[a-z]*[0-9]
